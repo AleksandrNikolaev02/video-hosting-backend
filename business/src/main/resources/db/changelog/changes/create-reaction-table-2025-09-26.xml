@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create-reactions-table" author="alex">
+        <createTable tableName="reactions">
+            <column name="id" type="java.lang.Long">
+                <constraints primaryKey="true" unique="true" nullable="false"/>
+            </column>
+            <column name="type" type="java.lang.String"/>
+            <column name="user_id" type="java.lang.Long"/>
+            <column name="video_id" type="java.lang.Long"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="reactions" baseColumnNames="video_id" constraintName="fk_reactions_videos"
+                                 referencedTableName="videos"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="reactions" baseColumnNames="user_id" constraintName="fk_reactions_users"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="reactions"/>
+            <dropTable tableName="reactions"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

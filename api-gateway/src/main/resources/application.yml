@@ -1,0 +1,31 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: proxy
+  cloud:
+    gateway:
+      default-filters:
+        - PreserveHostHeader
+      httpclient:
+        forwarded: true
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8889/eureka/
+  instance:
+    prefer-ip-address: true
+
+app:
+  service-name:
+    app-service: APP-SERVICE
+    auth-service: AUTH-SERVICE
+  web-client:
+    base-url: "http://auth-service:8085"
+
+logging:
+  org.springframework.cloud.netflix.eureka: WARN
+  org.apache.hc.client5.http: WARN
+  org.apache.hc.client5.http.wire: OFF

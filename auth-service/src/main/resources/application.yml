@@ -1,0 +1,68 @@
+server:
+  port: 8085
+
+app:
+  redis:
+    prefix-key:
+      user-prefix: user
+  order:
+    time-to-send-for-create-user: 5000
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:postgresql://172.23.6.13:5432/auth
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 25
+  jpa:
+    hibernate:
+      ddl-auto: none
+  data:
+    redis:
+      port: 6379
+      host: localhost
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600s
+  liquibase:
+    change-log: classpath:/db/changelog/changelog-master.xml
+
+kafka:
+  group-id: file-service-group
+  bootstrap-server: localhost:9092
+
+topics:
+  email-request: email-request
+  save-user: save-user-in-db
+  create-user: create-user-in-db
+  get-email-reply: get-email-reply
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8889/eureka/
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret_key: 53A73E5F1C4E0A2D3B5F2D784E6A1B423D6F247D1F6E5C3A596D635A75327855
+  time-to-live-access-token: 600
+  time-to-live-refresh-token: 3600
+  issuer: Project
+
+logging:
+  level:
+    com.netflix.discovery: INFO
+    org.springframework.cloud.netflix.eureka: WARN
+    org.apache.hc.client5.http: WARN
+    org.apache.hc.client5.http.wire: OFF
+
+admin:
+  data:
+    email: admin@mail.ru
+    password: admin

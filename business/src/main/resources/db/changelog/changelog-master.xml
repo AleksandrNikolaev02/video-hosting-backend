@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <include file="db/changelog/changes/create-sequence-generators-2025-09-20.xml"/>
+    <include file="db/changelog/changes/create-reaction-sequence-2025-09-26.xml"/>
+    <include file="db/changelog/changes/create-users-table-2025-09-26.xml"/>
+    <include file="db/changelog/changes/create-videos-table-2025-09-26.xml"/>
+    <include file="db/changelog/changes/create-reaction-table-2025-09-26.xml"/>
+</databaseChangeLog>

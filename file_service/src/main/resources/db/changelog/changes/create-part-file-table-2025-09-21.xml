@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create-part-file-table" author="alex">
+        <createTable tableName="part_files">
+            <column name="id" type="java.lang.Long">
+                <constraints primaryKey="true"/>
+            </column>
+            
+            <column name="file_id" type="INT"/>
+            
+            <column name="part_name" type="java.lang.String"/>
+
+            <column name="part_index" type="int"/>
+        </createTable>
+        
+        <addForeignKeyConstraint baseTableName="part_files" baseColumnNames="file_id" constraintName="fk_files"
+                                 referencedTableName="files"
+                                 referencedColumnNames="id"/>
+        
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="part_files"/>
+            <dropTable tableName="part_files"/>
+        </rollback>
+    </changeSet>
+    
+</databaseChangeLog>
