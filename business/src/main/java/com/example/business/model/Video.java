@@ -42,7 +42,7 @@ public class Video {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User creator;
-    @Column(name = "path")
+    @Column(name = "path", unique = true)
     private String path;
     @Column(name = "name")
     private String name;

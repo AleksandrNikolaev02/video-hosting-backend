@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface VideoRepository extends JpaRepository<Video, Long> {
     Optional<Video> findVideoByPath(String filename);
-    @Query(value = "select * from videos where videos.user_id = :user_id",
+    @Query(value = "select * from videos where videos.user_id = :user_id order by videos.path",
            nativeQuery = true)
     Page<Video> findAllVideoByUserId(@Param("user_id") Long userId, Pageable pageable);
 }
