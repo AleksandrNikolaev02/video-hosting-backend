@@ -13,5 +13,9 @@ public class FileConfig {
     private String bucket;
     @Value("${file.chunk-size}")
     private Long chunkSize;
+    @Value("${file.preview-path}")
+    private String previewPath;
+    @Value("${file.video-path}")
+    private String videoPath;
 }
 

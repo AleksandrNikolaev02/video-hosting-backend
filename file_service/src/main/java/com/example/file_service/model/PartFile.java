@@ -29,7 +29,7 @@ public class PartFile {
     private String partName;
     @ManyToOne
     @JoinColumn(name = "file_id")
-    private FileEntity file;
+    private VideoEntity file;
     @Column(name = "part_index")
     private int partIndex;
 }

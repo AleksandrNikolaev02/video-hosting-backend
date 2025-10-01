@@ -1,0 +1,95 @@
+package com.example.business.config;
+
+import com.example.dto.UserDTO;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
+
+import java.util.Map;
+
+@Configuration
+public class KafkaConfig {
+    @Value("${kafka.bootstrap-server}")
+    private String bootstrapServer;
+    @Value("${kafka.group-id}")
+    private String groupId;
+
+    @Bean
+    public ProducerFactory<String, String> producerFactory() {
+        return new DefaultKafkaProducerFactory<>(getProducerConfig());
+    }
+
+    @Bean
+    public ProducerFactory<String, UserDTO> producerFactoryUserDTO() {
+        return new DefaultKafkaProducerFactory<>(getProducerConfig());
+    }
+
+    @Bean
+    public KafkaTemplate<String, String> kafkaTemplate() {
+        return new KafkaTemplate<>(producerFactory());
+    }
+
+    @Bean
+    public KafkaTemplate<String, UserDTO> kafkaTemplateUserDTO() {
+        return new KafkaTemplate<>(producerFactoryUserDTO());
+    }
+
+    @Bean
+    public ConsumerFactory<String, UserDTO> consumerFactoryUserDTO() {
+        return new DefaultKafkaConsumerFactory<>(getConsumerConfig(), new StringDeserializer(),
+                new JsonDeserializer<>(UserDTO.class));
+    }
+
+    @Bean
+    public ConsumerFactory<String, String> consumerFactoryString() {
+        return new DefaultKafkaConsumerFactory<>(getConsumerConfig(), new StringDeserializer(),
+                new StringDeserializer());
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, UserDTO> kafkaTemplateTaskDetailsListener() {
+        ConcurrentKafkaListenerContainerFactory<String, UserDTO> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactoryUserDTO());
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> concurrentKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactoryString());
+        return factory;
+    }
+
+    private Map<String, Object> getConsumerConfig() {
+        return Map.of(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer,
+                ConsumerConfig.GROUP_ID_CONFIG, groupId,
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringSerializer.class,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonSerializer.class,
+                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true,
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
+        );
+    }
+
+    private Map<String, Object> getProducerConfig() {
+        return Map.of(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer,
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class
+        );
+    }
+}

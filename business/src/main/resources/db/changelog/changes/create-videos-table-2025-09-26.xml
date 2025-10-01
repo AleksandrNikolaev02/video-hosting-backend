@@ -15,6 +15,8 @@
             <column name="description" type="java.lang.String"/>
             <column name="name" type="java.lang.String"/>
             <column name="path" type="java.lang.String"/>
+            <column name="status" type="java.lang.String"/>
+            <column name="created_at" type="datetime"/>
         </createTable>
 
         <addForeignKeyConstraint baseTableName="videos" baseColumnNames="user_id" constraintName="fk_videos"

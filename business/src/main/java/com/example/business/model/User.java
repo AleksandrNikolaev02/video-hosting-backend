@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 @Entity
@@ -22,5 +23,5 @@ public class User {
     @Embedded
     private UserProfile profile;
     @OneToMany(mappedBy = "creator")
-    private Collection<Video> videos;
+    private Collection<Video> videos = new ArrayList<>();
 }

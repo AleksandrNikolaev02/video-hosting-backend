@@ -9,4 +9,7 @@
     <include file="db/changelog/changes/create-file-entity-table-2025-09-21.xml"/>
     <include file="db/changelog/changes/create-part-file-sequence-2025-09-21.xml"/>
     <include file="db/changelog/changes/create-part-file-table-2025-09-21.xml"/>
+    <include file="db/changelog/changes/create-images-sequence-2025-09-30.xml"/>
+    <include file="db/changelog/changes/create-images-table-2025-09-30.xml"/>
+    <include file="db/changelog/changes/create-previews-table-2025-09-30.xml"/>
 </databaseChangeLog>

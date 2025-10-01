@@ -4,7 +4,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://172.23.6.13:5432/file
+    url: jdbc:postgresql://localhost:5432/file
     username: postgres
     password: 1234
     driver-class-name: org.postgresql.Driver
@@ -15,22 +15,6 @@ spring:
       ddl-auto: none
   liquibase:
     change-log: classpath:/db/changelog/changelog-master.xml
-  kafka:
-    bootstrap-servers: "localhost:9092"
-    consumer:
-      group-id: file-service-group
-      auto-offset-reset: earliest
-      enable-auto-commit: true
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      compression-type: gzip
-    properties:
-      spring.json.trusted.packages: "*"
-      max.request.size: 5242880
-      buffer.memory: 5242880
   data:
     redis:
       port: 6379
@@ -39,12 +23,18 @@ spring:
 file:
   dir: uploads
   chunk-size: 1048576
+  preview-path: previews
+  video-path: videos
 minio:
   server:
     url: http://localhost:9000
     access_key: 12345
     secret_key: admin12345
     port: 9000
+
+kafka:
+  group-id: file-service-group
+  bootstrap-server: localhost:9092
 
 logging:
   level:
@@ -63,6 +53,7 @@ topics:
   get-file-reply: get-file-reply
   file-answers: file-answers
   file-responses: file-responses
+  create-video: create-video-in-db
 
 metrics:
   error-minio-service-metric: error_minio_service_metric

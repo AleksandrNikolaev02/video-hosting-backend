@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create-previews-table" author="alex">
+        <createTable tableName="previews">
+            <column name="id" type="java.lang.Long">
+                <constraints primaryKey="true" unique="true" nullable="false"/>
+            </column>
+
+            <column name="path" type="java.lang.String"/>
+            <column name="video_id" type="java.lang.Long"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="previews" baseColumnNames="video_id" constraintName="fk_preview_to_video"
+                                 referencedTableName="videos"
+                                 referencedColumnNames="id"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="previews"/>
+            <dropTable tableName="previews"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

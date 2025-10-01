@@ -1,8 +1,6 @@
 package com.example.file_service;
 
-import com.example.dto.FileDataDTO;
 import com.example.dto.FileEventDTO;
-import com.example.dto.FileResponseDTO;
 import com.example.dto.Status;
 import com.example.dto.Event;
 import com.example.dto.VideoLoadDTO;
@@ -10,13 +8,11 @@ import com.example.file_service.extensions.KafkaExtension;
 import com.example.file_service.extensions.MinioExtension;
 import com.example.file_service.extensions.PostgresExtension;
 import com.example.file_service.mapper.JsonMapper;
-import com.example.file_service.model.FileEntity;
-import com.example.file_service.repository.FileEntityRepository;
+import com.example.file_service.model.VideoEntity;
+import com.example.file_service.repository.VideoEntityRepository;
 import com.example.file_service.service.FileService;
 import io.minio.MinioClient;
-import io.minio.StatObjectArgs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.jetbrains.annotations.NotNull;
@@ -28,16 +24,12 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -64,7 +56,7 @@ public class FileServiceApplicationTests {
     @Autowired
     private FileService fileService;
     @Autowired
-    private FileEntityRepository fileEntityRepository;
+    private VideoEntityRepository videoEntityRepository;
 
     @Test
     public void testStoreChunkFile() throws IOException {
@@ -84,7 +76,7 @@ public class FileServiceApplicationTests {
 
         fileService.saveChunkFile(1);
 
-        Optional<FileEntity> fileEntity = fileEntityRepository.findByUserId(1L);
+        Optional<VideoEntity> fileEntity = videoEntityRepository.findByUserId(1L);
         assertDoesNotThrow(() -> fileService.getFile(String.format("1/%s", fileEntity.get().getFilename())));
         var dto = fileService.getFile(String.format("1/%s", fileEntity.get().getFilename()));
 
