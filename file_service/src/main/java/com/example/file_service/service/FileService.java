@@ -119,7 +119,8 @@ public class FileService {
 
         PutObjectArgs putObjectArgs = PutObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
-                .object(userId + "/" + dto.partName())
+                .object(String.format("%d/%s/%s/%s", userId,fileConfig.getVideoPath(),
+                        file.get().getFilename(), dto.partName()))
                 .stream(new ByteArrayInputStream(dto.data()), dto.data().length, -1)
                 .contentType(dto.contentType())
                 .build();
@@ -141,14 +142,16 @@ public class FileService {
         for (PartFile part : file.getParts()) {
             sources.add(ComposeSource.builder()
                     .bucket(fileConfig.getBucket())
-                    .object(dto.userId() + "/" + part.getPartName())
+                    .object(String.format("%d/%s/%s/%s", dto.userId(),fileConfig.getVideoPath(),
+                            file.getFilename(), part.getPartName()))
                     .build());
         }
 
         minioClient.composeObject(
                 ComposeObjectArgs.builder()
                         .bucket(fileConfig.getBucket())
-                        .object(dto.userId() + "/" + file.getFilename())
+                        .object(String.format("%d/%s/%s", dto.userId(),fileConfig.getVideoPath(),
+                                file.getFilename()))
                         .sources(sources)
                         .userMetadata(Map.of("Original-Content-Type", file.getContentType()))
                         .build()
@@ -307,7 +310,7 @@ public class FileService {
             end = Math.min(start + chunkSize - 1, fileLength - 1);
         }
 
-        String path = userId + "/" + filename;
+        String path = String.format("%d/%s/%s", userId, fileConfig.getVideoPath(), filename);
 
         GetObjectArgs args = GetObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
