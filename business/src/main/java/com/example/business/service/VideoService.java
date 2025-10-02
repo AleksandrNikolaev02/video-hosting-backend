@@ -1,6 +1,7 @@
 package com.example.business.service;
 
 import com.example.business.dto.CreateBaseVideoDTO;
+import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.enums.VideoStatus;
 import com.example.business.exception.UserNotFoundException;
@@ -10,6 +11,7 @@ import com.example.business.model.Video;
 import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
 import com.example.dto.CreateVideoDTO;
+import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +19,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -38,17 +41,19 @@ public class VideoService {
         videoRepository.save(video);
     }
 
-    public void updateVideo(UpdateVideoDTO dto, String filename) {
-        Video video = videoRepository.findVideoByPath(filename).orElseThrow(()
+    public void updateVideo(UpdateVideoDTO dto, String path, Long userId) {
+        Video video = videoRepository.findVideoByPath(path).orElseThrow(()
                 -> new VideoNotFoundException("Video not found!"));
 
-        video.setName(dto.title());
-        video.setDescription(dto.description());
+        validateCreatorOfVideo(video, userId);
+
+        Optional.ofNullable(dto.description()).ifPresent(video::setDescription);
+        Optional.ofNullable(dto.title()).ifPresent(video::setName);
 
         videoRepository.save(video);
     }
 
-    public void createVideo(CreateBaseVideoDTO dto, Long userId) {
+    public Video createVideo(CreateBaseVideoDTO dto, Long userId) {
         User creator = userRepository.findById(userId).orElseThrow(()
                 -> new UserNotFoundException("User not found!"));
 
@@ -58,21 +63,39 @@ public class VideoService {
         video.setCreator(creator);
         video.setVideoStatus(VideoStatus.DRAFT);
 
+        return videoRepository.save(video);
+    }
+
+    public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {
+        Video video = videoRepository.findById(dto.getVideoId()).orElseThrow(()
+                -> new VideoNotFoundException(String.format("Video with id %d not found!", dto.getVideoId())));
+
+        validateCreatorOfVideo(video, userId);
+
+        video.setPath(dto.getPath());
+
         videoRepository.save(video);
     }
 
-    public void postVideo(String filename) {
+    public void postVideo(String filename, Long userId) {
         Video video = videoRepository.findVideoByPath(filename).orElseThrow(()
                 -> new VideoNotFoundException(String.format("Video with filename %s not found!", filename)));
 
+        validateCreatorOfVideo(video, userId);
+
         video.setVideoStatus(VideoStatus.UPLOADED);
         video.setDate(LocalDateTime.now());
-        video.setPath(filename);
 
         videoRepository.save(video);
     }
 
     public Page<Video> getVideos(Long userId, Pageable pageable) {
         return videoRepository.findAllVideoByUserId(userId, pageable);
+    }
+
+    private void validateCreatorOfVideo(Video video, Long userId) {
+        if (!video.getCreator().getId().equals(userId)) {
+            throw new NoRightsException("You are not creator of video!");
+        }
     }
 }

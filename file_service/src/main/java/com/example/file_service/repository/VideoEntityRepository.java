@@ -12,7 +12,7 @@ public interface VideoEntityRepository extends JpaRepository<VideoEntity, Long> 
     @Query(value = "select * from files where files.user_id = :user_id order by files.filename",
            nativeQuery = true)
     List<VideoEntity> findByUserId(@Param("user_id") Long userId);
-    Optional<VideoEntity> findByKey(Long key);
+    Optional<VideoEntity> findByKey(String key);
     @Query(value = "select COALESCE(max(files.id), 0) from files", nativeQuery = true)
     Long findMaxId();
     @Query(value = "select files.length from files where files.filename = :filename",

@@ -43,6 +43,7 @@ public class CustomControllerAdvice {
 
     @ExceptionHandler(value = VideoNotFoundException.class)
     public ResponseEntity<String> handle(VideoNotFoundException exception) {
+        log.error(exception.getMessage());
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 }

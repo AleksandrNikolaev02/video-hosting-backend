@@ -25,13 +25,14 @@ import java.util.Collection;
 @Setter
 @NoArgsConstructor
 public class VideoEntity extends FileEntity {
+    @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "file_id_generator")
     @SequenceGenerator(name = "file_id_generator",
                        sequenceName = "file_id_generator",
                        allocationSize = 10)
     private Long id;
     @Column(name = "key")
-    private Long key;
+    private String key;
     @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(value = FetchMode.SUBSELECT)
     @OrderBy(value = "partIndex ASC")

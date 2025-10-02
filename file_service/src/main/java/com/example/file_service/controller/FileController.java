@@ -7,6 +7,7 @@ import com.example.file_service.dto.FileEntityDTO;
 import com.example.file_service.dto.GetPreviewDTO;
 import com.example.file_service.dto.RequestGetPreviewDTO;
 import com.example.file_service.dto.SaveChunkDTO;
+import com.example.file_service.dto.SaveChunkResponseDTO;
 import com.example.file_service.dto.SaveChunksDTO;
 import com.example.file_service.dto.SavePreviewDTO;
 import com.example.file_service.mapper.FileEntityMapper;
@@ -29,12 +30,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,37 +43,24 @@ import java.util.stream.Collectors;
 public class FileController {
     private final FileService fileService;
     private final FileEntityMapper fileEntityMapper;
+    private final String PREFIX_PART = "part";
 
-    @Operation(summary = "Сохранить кусок файла (тестовый endpoint, нужно будет переписать)")
+    @Operation(summary = "Сохранить кусок файла")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Return content type of file!"),
+            @ApiResponse(responseCode = "200"),
             @ApiResponse(responseCode = "500", description = "Error saving file in Minio!",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = String.class)))
     })
-    @PostMapping(value = "/save_chunk")
-    public ResponseEntity<String> saveChunk(@Validated @RequestBody SaveChunkDTO dto,
-                                            @RequestHeader("X-user-id") long userId,
-                                            @RequestHeader("X-path-to-file") String pathFile) throws IOException {
-        Path path = Path.of(pathFile);
-        byte[] file = Files.readAllBytes(path);
-        String contentType = Files.probeContentType(path);
+    @PostMapping(value = "/save_chunk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<SaveChunkResponseDTO> saveChunk(@Validated @RequestPart("dto") SaveChunkDTO dto,
+                                                          @RequestPart(value = "file") MultipartFile file,
+                                                          @RequestHeader("X-user-id") long userId) throws IOException {
+        VideoLoadDTO videoLoadDTO = new VideoLoadDTO(file.getBytes(),
+                dto.getContentType(), PREFIX_PART + dto.getPartIndex(), dto.getKey());
 
-        final int length = file.length;
-        final int chunkSize = 5_242_880;
-        int count = length / chunkSize + (length % chunkSize == 0 ? 0 : 1);
-
-        for (int i = 0; i < count; ++i) {
-            int start = i * chunkSize;
-            int end = Math.min(start + chunkSize, length);
-
-            byte[] chunk = Arrays.copyOfRange(file, start, end);
-
-            VideoLoadDTO videoLoadDTO = new VideoLoadDTO(chunk, contentType, "part" + i, dto.getKey());
-            fileService.storeChunkFile(videoLoadDTO, userId, i, dto.getFilename());
-        }
-
-        return ResponseEntity.ok(contentType);
+        return ResponseEntity.ok(fileService.storeChunkFile(videoLoadDTO,
+                userId, dto.getPartIndex(), dto.getFilename()));
     }
 
     @Operation(summary = "Сохранение всех кусков файла в один файл")
@@ -90,10 +77,10 @@ public class FileController {
     @Operation(summary = "Сгенерировать уникальный ключ для файла")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
-                         content = @Content(schema = @Schema(implementation = Long.class)))
+                         content = @Content(schema = @Schema(implementation = String.class)))
     })
     @GetMapping(value = "/unique_key")
-    public ResponseEntity<Long> getUniqueKey() {
+    public ResponseEntity<String> getUniqueKey() {
         return ResponseEntity.ok().body(fileService.findUniqueKeyForFile());
     }
 

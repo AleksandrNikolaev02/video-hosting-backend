@@ -1,7 +1,9 @@
 package com.example.business.controller;
 
 import com.example.business.dto.CreateBaseVideoDTO;
+import com.example.business.dto.CreateBaseVideoResponseDTO;
 import com.example.business.dto.GetVideoDTO;
+import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.mapper.VideoMapper;
 import com.example.business.service.VideoService;
@@ -40,10 +42,11 @@ public class VideoController {
             @ApiResponse(responseCode = "404",
                          content = @Content(schema = @Schema(implementation = String.class)))
     })
-    public ResponseEntity<Void> createVideo(@Validated @RequestBody CreateBaseVideoDTO dto,
-                                            @RequestHeader("X-user-id") Long userId) {
-        videoService.createVideo(dto, userId);
-        return ResponseEntity.accepted().build();
+    public ResponseEntity<CreateBaseVideoResponseDTO> createVideo(@Validated @RequestBody CreateBaseVideoDTO dto,
+                                                                  @RequestHeader("X-user-id") Long userId) {
+        return ResponseEntity.status(201).body(videoMapper.getCreateVideoResponseDtoFromVideo(
+                videoService.createVideo(dto, userId)
+        ));
     }
 
     @Operation(summary = "Опубликовать видео на сервисе")
@@ -53,8 +56,9 @@ public class VideoController {
                          content = @Content(schema = @Schema(implementation = String.class)))
     })
     @PostMapping(value = "/post")
-    public ResponseEntity<Void> postVideo(@RequestParam("filename") String filename) {
-        videoService.postVideo(filename);
+    public ResponseEntity<Void> postVideo(@RequestParam("filename") String filename,
+                                          @RequestHeader("X-user-id") Long userId) {
+        videoService.postVideo(filename, userId);
         return ResponseEntity.ok().build();
     }
 
@@ -64,11 +68,20 @@ public class VideoController {
             @ApiResponse(responseCode = "204"),
             @ApiResponse(responseCode = "404", description = "Video not found!")
     })
-    public ResponseEntity<Void> updateVideo(@Validated @RequestBody UpdateVideoDTO dto,
-                                            @RequestHeader("filename") String filename) {
-        videoService.updateVideo(dto, filename);
+    public ResponseEntity<Void> updateVideo(@RequestBody UpdateVideoDTO dto,
+                                            @RequestHeader("filename") String filename,
+                                            @RequestHeader("X-user-id") Long userId) {
+        videoService.updateVideo(dto, filename, userId);
 
         return ResponseEntity.status(204).build();
+    }
+
+    @PutMapping(value = "/update_path")
+    @Operation(summary = "Синхронизировать имя видео с именем из микросервиса файлов")
+    public ResponseEntity<Void> updatePathVideo(@Validated @RequestBody UpdatePathVideoDTO dto,
+                                                @RequestHeader("X-user-id") Long userId) {
+        videoService.updateVideoPath(dto, userId);
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Получить список всех видео по id пользователя")

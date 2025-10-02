@@ -1,7 +1,6 @@
 package com.example.file_service.model;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,8 +11,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class FileEntity {
-    @Id
-    private Long id;
     @Column(name = "user_id")
     private Long userId;
     @Column(name = "filename")

@@ -3,6 +3,7 @@ package com.example.file_service.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PreviewEntity extends FileEntity {
+    @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "images-id-generator")
     @SequenceGenerator(name = "images-id-generator",
                        sequenceName = "images-id-generator",

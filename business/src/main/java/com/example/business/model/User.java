@@ -19,7 +19,7 @@ import java.util.Collection;
 @NoArgsConstructor
 public class User {
     @Id
-    private Integer id;
+    private Long id;
     @Embedded
     private UserProfile profile;
     @OneToMany(mappedBy = "creator")

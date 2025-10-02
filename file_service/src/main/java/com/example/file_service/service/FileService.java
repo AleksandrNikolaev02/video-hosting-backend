@@ -13,6 +13,7 @@ import com.example.file_service.dto.ChunkFileDTO;
 import com.example.file_service.dto.DeletePreviewDTO;
 import com.example.file_service.dto.GetPreviewDTO;
 import com.example.file_service.dto.RequestGetPreviewDTO;
+import com.example.file_service.dto.SaveChunkResponseDTO;
 import com.example.file_service.dto.SaveChunksDTO;
 import com.example.file_service.dto.SavePreviewDTO;
 import com.example.file_service.exception.FileNotFoundByKeyException;
@@ -83,8 +84,11 @@ public class FileService {
 
     @SneakyThrows
     @Transactional
-    public void storeChunkFile(VideoLoadDTO dto, long userId, int index, String filename) {
+    public SaveChunkResponseDTO storeChunkFile(VideoLoadDTO dto, long userId,
+                                               int index, String originalFilename) {
         Optional<VideoEntity> file = videoEntityRepository.findByKey(dto.key());
+
+        SaveChunkResponseDTO saveChunkResponseDTO = new SaveChunkResponseDTO();
 
         if (!isBucketExists(fileConfig.getBucket())) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(fileConfig.getBucket()).build());
@@ -92,12 +96,15 @@ public class FileService {
 
         if (file.isEmpty()) {
             VideoEntity videoEntity = new VideoEntity();
+            String filename = UUID.randomUUID().toString();
+            saveChunkResponseDTO.setFilename(filename);
+
             videoEntity.setUserId(userId);
-            videoEntity.setFilename(UUID.randomUUID().toString());
+            videoEntity.setFilename(filename);
             videoEntity.setContentType(dto.contentType());
             videoEntity.setKey(dto.key());
             videoEntity.setLength(0L);
-            videoEntity.setOriginalFilename(filename);
+            videoEntity.setOriginalFilename(originalFilename);
 
             file = Optional.of(videoEntityRepository.save(videoEntity));
         }
@@ -118,6 +125,8 @@ public class FileService {
                 .build();
 
         saveFileInMinio(putObjectArgs);
+
+        return saveChunkResponseDTO;
     }
 
     @SneakyThrows
@@ -126,7 +135,7 @@ public class FileService {
         List<ComposeSource> sources = new ArrayList<>();
 
         VideoEntity file = videoEntityRepository.findByKey(dto.key()).orElseThrow(() ->
-            new FileNotFoundByKeyException(String.format("File not found by key: %d", dto.key()))
+            new FileNotFoundByKeyException(String.format("File not found by key: %s", dto.key()))
         );
 
         for (PartFile part : file.getParts()) {
@@ -149,8 +158,8 @@ public class FileService {
                                    fileEntityMapper.getCreateVideoDtoFromVideoEntity(file));
     }
 
-    public Long findUniqueKeyForFile() {
-        return videoEntityRepository.findMaxId() + 1;
+    public String findUniqueKeyForFile() {
+        return UUID.randomUUID().toString();
     }
 
     public List<VideoEntity> getFileEntitiesByUserId(Long userId) {
@@ -158,7 +167,7 @@ public class FileService {
     }
 
     @KafkaListener(topics = "${topics.file-events}",
-                   groupId = "${spring.kafka.consumer.group-id}",
+                   groupId = "${kafka.group-id}",
                    errorHandler = "customKafkaErrorHandler")
     @SneakyThrows
     public void storeFile(String event) {
@@ -358,7 +367,7 @@ public class FileService {
     }
 
     @KafkaListener(topics = "${topics.delete-file-request}",
-                   groupId = "${spring.kafka.consumer.group-id}",
+                   groupId = "${kafka.group-id}",
                    errorHandler = "customKafkaErrorHandler")
     @SneakyThrows
     public void deleteDirectory(String path) {

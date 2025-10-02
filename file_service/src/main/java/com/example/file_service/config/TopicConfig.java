@@ -14,4 +14,5 @@ public class TopicConfig {
     private String fileResponses;
     private String fileAnswers;
     private String createVideo;
+    private String updatePath;
 }

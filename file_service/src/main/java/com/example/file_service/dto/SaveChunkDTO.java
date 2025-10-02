@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SaveChunkDTO {
-    @Positive private Long key;
+    @Positive private String key;
     @NotNull private String filename; // оригинальное имя файла
+    @NotNull private String contentType;
+    @NotNull private Integer partIndex;
 }

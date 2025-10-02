@@ -14,7 +14,7 @@
             <column name="filename" type="java.lang.String"/>
             <column name="filename_orig" type="java.lang.String"/>
             <column name="content_type" type="java.lang.String"/>
-            <column name="key" type="java.lang.Long"/>
+            <column name="key" type="java.lang.String"/>
             <column name="length" type="java.lang.Long"/>
         </createTable>
         
