@@ -1,5 +1,6 @@
 package com.example.business.repository;
 
+import com.example.business.dto.GetEvaluatesVideoDTO;
 import com.example.business.model.Video;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,4 +15,10 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
     @Query(value = "select * from videos where videos.user_id = :user_id order by videos.path",
            nativeQuery = true)
     Page<Video> findAllVideoByUserId(@Param("user_id") Long userId, Pageable pageable);
+    @Query(value = """
+            select :video_id, l.likes, d.dislikes from (select COUNT(*)  as likes from reactions r where r.type = 'like' and r.video_id = :video_id) as l \s
+            cross join \s
+            (select COUNT(*) as dislikes from reactions r where r.type = 'dislike' and r.video_id = :video_id) as d;
+            """, nativeQuery = true, name = "getAllEvaluatesByVideo")
+    GetEvaluatesVideoDTO getAllEvaluatesByVideo(@Param("video_id") Long videoId);
 }

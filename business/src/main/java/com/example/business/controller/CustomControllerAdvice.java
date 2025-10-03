@@ -1,6 +1,7 @@
 package com.example.business.controller;
 
 import com.example.business.exception.UserNotFoundException;
+import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.extern.slf4j.Slf4j;
@@ -45,5 +46,11 @@ public class CustomControllerAdvice {
     public ResponseEntity<String> handle(VideoNotFoundException exception) {
         log.error(exception.getMessage());
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = VideoAlreadyEvaluateException.class)
+    public ResponseEntity<String> handle(VideoAlreadyEvaluateException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_GATEWAY);
     }
 }
