@@ -104,54 +104,37 @@ public class VideoService {
     public void evaluateVideo(EvaluateVideoDTO dto, Long userId) {
         Video video = getVideoById(dto.getVideoId());
         User user = getUserById(userId);
-        boolean isLiked = false;
-        boolean isDisliked = false;
-        Like currentLike = null;
-        Dislike currentDislike = null;
 
-        for (Like like : video.getLikes()) {
-            if (like.getUser().getId().equals(userId)) {
-                currentLike = like;
-                isLiked = true;
-                break;
-            }
-        }
-        for (Dislike dislike : video.getDislikes()) {
-            if (dislike.getUser().getId().equals(userId)) {
-                currentDislike = dislike;
-                isDisliked = true;
-                break;
-            }
-        }
+        Like currentLike = video.getLikes().stream()
+                .filter((like) -> like.getUser().getId().equals(userId))
+                .findFirst().orElse(null);
+
+        Dislike currentDislike = video.getDislikes().stream()
+                .filter((dislike -> dislike.getUser().getId().equals(userId)))
+                .findFirst().orElse(null);
 
         switch (dto.getEvaluateType()) {
             case LIKE -> {
-                if (isLiked) {
+                if (currentLike != null) {
                     video.getLikes().remove(currentLike);
-                    break;
-                }
-                if (isDisliked) {
+                } else {
+                    if (currentDislike != null) {
+                        video.getDislikes().remove(currentDislike);
+                    }
+
                     addLike(video, user);
-
-                    video.getDislikes().remove(currentDislike);
-                    break;
                 }
-
-                addLike(video, user);
             }
             case DISLIKE -> {
-                if (isDisliked) {
+                if (currentDislike != null) {
                     video.getDislikes().remove(currentDislike);
-                    break;
-                }
-                if (isLiked) {
+                } else {
+                    if (currentLike != null) {
+                        video.getLikes().remove(currentLike);
+                    }
+
                     addDislike(video, user);
-
-                    video.getLikes().remove(currentLike);
-                    break;
                 }
-
-                addDislike(video, user);
             }
         }
     }
