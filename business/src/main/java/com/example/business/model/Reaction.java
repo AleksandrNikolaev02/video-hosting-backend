@@ -47,8 +47,8 @@ public class Reaction {
     private Long id;
     @ManyToOne
     @JoinColumn(name = "video_id", nullable = false)
-    private Video video;
+    protected Video video;
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    protected User user;
 }

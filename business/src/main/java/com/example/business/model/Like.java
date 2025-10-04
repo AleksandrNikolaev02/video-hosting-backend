@@ -2,17 +2,12 @@ package com.example.business.model;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 @DiscriminatorValue("like")
 public class Like extends Reaction {
-    @Override
-    public void setVideo(Video video) {
-        super.setVideo(video);
-    }
-
-    @Override
-    public void setUser(User user) {
-        super.setUser(user);
-    }
 }
