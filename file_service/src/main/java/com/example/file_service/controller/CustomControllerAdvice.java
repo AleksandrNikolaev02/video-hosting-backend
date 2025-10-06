@@ -6,6 +6,7 @@ import com.example.file_service.exception.FileNotFoundByKeyException;
 import com.example.file_service.exception.FileReadException;
 import com.example.file_service.exception.FileNotFoundByUserIdException;
 import com.example.file_service.exception.MinioException;
+import com.example.file_service.exception.NoRightsException;
 import com.example.file_service.exception.PreviewNotFoundByFilename;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -56,5 +57,10 @@ public class CustomControllerAdvice {
     @ExceptionHandler(value = MinioException.class)
     public ResponseEntity<String> handle(MinioException exception) {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(value = NoRightsException.class)
+    public ResponseEntity<String> handle(NoRightsException exception) {
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.FORBIDDEN);
     }
 }

@@ -16,10 +16,13 @@ import com.example.file_service.dto.RequestGetPreviewDTO;
 import com.example.file_service.dto.SaveChunkResponseDTO;
 import com.example.file_service.dto.SaveChunksDTO;
 import com.example.file_service.dto.SavePreviewDTO;
+import com.example.file_service.dto.SavePreviewResponseDTO;
+import com.example.file_service.dto.UpdatePreviewDTO;
 import com.example.file_service.exception.FileNotFoundByKeyException;
 import com.example.file_service.exception.FileReadException;
 import com.example.file_service.exception.FileStorageException;
 import com.example.file_service.exception.MinioException;
+import com.example.file_service.exception.NoRightsException;
 import com.example.file_service.exception.PreviewNotFoundByFilename;
 import com.example.file_service.interfaces.Mapper;
 import com.example.file_service.mapper.FileEntityMapper;
@@ -55,6 +58,7 @@ import org.springframework.http.HttpRange;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -97,7 +101,6 @@ public class FileService {
         if (file.isEmpty()) {
             VideoEntity videoEntity = new VideoEntity();
             String filename = UUID.randomUUID().toString();
-            saveChunkResponseDTO.setFilename(filename);
 
             videoEntity.setUserId(userId);
             videoEntity.setFilename(filename);
@@ -124,6 +127,8 @@ public class FileService {
                 .stream(new ByteArrayInputStream(dto.data()), dto.data().length, -1)
                 .contentType(dto.contentType())
                 .build();
+
+        saveChunkResponseDTO.setFilename(file.get().getFilename());
 
         saveFileInMinio(putObjectArgs);
 
@@ -194,25 +199,27 @@ public class FileService {
         kafkaTemplate.send(topic, mapper.serialize(fileResponseDTO));
     }
 
-    public void savePreview(SavePreviewDTO dto, Long userId) {
+    @SneakyThrows
+    public SavePreviewResponseDTO savePreview(Long userId, MultipartFile file, SavePreviewDTO dto) {
         String filename = UUID.randomUUID().toString();
 
         PutObjectArgs args = PutObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
                 .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), filename))
-                .stream(new ByteArrayInputStream(dto.data()), dto.data().length, -1)
-                .contentType(dto.contentType())
+                .stream(new ByteArrayInputStream(file.getBytes()), file.getSize(), -1)
+                .contentType(file.getContentType())
                 .build();
 
         saveFileInMinio(args);
 
-        previewEntityRepository.save(createPreviewEntity(filename, dto, userId));
+        previewEntityRepository.save(createPreviewEntity(filename, file.getSize(),
+                                     userId, file.getContentType(), dto.originalFilename()));
+
+        return new SavePreviewResponseDTO(file.getContentType(), filename);
     }
 
     public GetPreviewDTO getPreview(RequestGetPreviewDTO dto) {
-        PreviewEntity preview = previewEntityRepository.findByFilename(dto.filename()).orElseThrow(
-                () -> new PreviewNotFoundByFilename(String.format("File not found by filename: %s", dto.filename()))
-        );
+        PreviewEntity preview = getPreviewByFilename(dto.filename());
 
         String path = String.format("%d/%s/%s", preview.getUserId(), fileConfig.getPreviewPath(), dto.filename());
         FileDataDTO fileDataDTO = getFile(path);
@@ -221,10 +228,10 @@ public class FileService {
     }
 
     @SneakyThrows
-    public void deletePreview(DeletePreviewDTO dto) {
-        PreviewEntity preview = previewEntityRepository.findByFilename(dto.filename()).orElseThrow(
-                () -> new PreviewNotFoundByFilename(String.format("File not found by filename: %s", dto.filename()))
-        );
+    public void deletePreview(DeletePreviewDTO dto, Long userId) {
+        PreviewEntity preview = getPreviewByFilename(dto.filename());
+
+        validatePermission(preview, userId);
 
         RemoveObjectArgs args = RemoveObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
@@ -232,15 +239,48 @@ public class FileService {
                 .build();
 
         minioClient.removeObject(args);
+
+        previewEntityRepository.delete(preview);
     }
 
-    private PreviewEntity createPreviewEntity(String filename, SavePreviewDTO dto, Long userId) {
+    public void updatePreview(UpdatePreviewDTO dto, Long userId, MultipartFile file) {
+        PreviewEntity preview = getPreviewByFilename(dto.filename());
+
+        validatePermission(preview, userId);
+
+        PutObjectArgs args = createPutObjectArgsFromFile(file, userId, preview.getFilename());
+
+        saveFileInMinio(args);
+
+        preview.setContentType(file.getContentType());
+        preview.setLength(file.getSize());
+        preview.setOriginalFilename(dto.originalFilename());
+
+        previewEntityRepository.save(preview);
+    }
+
+    private PutObjectArgs createPutObjectArgsFromFile(MultipartFile file, Long userId, String filename) {
+        try {
+            return PutObjectArgs.builder()
+                    .bucket(fileConfig.getBucket())
+                    .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), filename))
+                    .stream(new ByteArrayInputStream(file.getBytes()), file.getSize(), -1)
+                    .contentType(file.getContentType())
+                    .build();
+        } catch (Exception exception) {
+            throw new MinioException("Error reading file!", exception);
+        }
+    }
+
+    private PreviewEntity createPreviewEntity(String filename, Long length,
+                                              Long userId, String contentType, String originalFilename) {
         PreviewEntity preview = new PreviewEntity();
 
-        preview.setLength((long) dto.data().length);
+        preview.setLength(length);
         preview.setUserId(userId);
-        preview.setContentType(dto.contentType());
+        preview.setContentType(contentType);
         preview.setFilename(filename);
+        preview.setOriginalFilename(originalFilename);
 
         return preview;
     }
@@ -421,5 +461,17 @@ public class FileService {
 
     private long getFileSize(String filename) {
         return videoEntityRepository.getFileSize(filename);
+    }
+
+    private PreviewEntity getPreviewByFilename(String filename) {
+        return previewEntityRepository.findByFilename(filename).orElseThrow(
+                () -> new PreviewNotFoundByFilename(String.format("File not found by filename: %s", filename))
+        );
+    }
+
+    private void validatePermission(PreviewEntity preview, Long userId) {
+        if (!preview.getUserId().equals(userId)) {
+            throw new NoRightsException("You aren't creator of course!");
+        }
     }
 }

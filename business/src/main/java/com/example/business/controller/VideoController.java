@@ -97,7 +97,7 @@ public class VideoController {
                             array = @ArraySchema(schema = @Schema(implementation = GetVideoDTO.class)))) })
     @GetMapping(value = "/get_videos")
     public List<GetVideoDTO> getVideos(@RequestHeader("X-user-id") Long userId,
-                                @PageableDefault Pageable pageable) {
+                                       @PageableDefault Pageable pageable) {
         return videoService.getVideos(userId, pageable)
                 .getContent().stream().map(videoMapper::getVideoDtoFromVideo).toList();
     }

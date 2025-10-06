@@ -7,15 +7,12 @@ import com.example.business.dto.GetEvaluatesVideoDTO;
 import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
-import com.example.business.enums.EvaluateType;
 import com.example.business.enums.VideoStatus;
 import com.example.business.exception.UserNotFoundException;
-import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
 import com.example.business.factory.ReactionFactory;
 import com.example.business.model.Dislike;
 import com.example.business.model.Like;
-import com.example.business.model.Reaction;
 import com.example.business.model.User;
 import com.example.business.model.Video;
 import com.example.business.repository.UserRepository;
@@ -30,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.Optional;
 
 @Service
@@ -38,6 +34,7 @@ import java.util.Optional;
 public class VideoService {
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
+    private final FindEntityService findEntityService;
 
     @KafkaListener(topics = "${topics.create-video}",
                    groupId = "${kafka.group-id}",
@@ -76,7 +73,7 @@ public class VideoService {
     }
 
     public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {
-        Video video = getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.getVideoId());
 
         validateCreatorOfVideo(video, userId);
 
@@ -102,7 +99,7 @@ public class VideoService {
 
     @Transactional
     public void evaluateVideo(EvaluateVideoDTO dto, Long userId) {
-        Video video = getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.getVideoId());
         User user = getUserById(userId);
 
         Like currentLike = video.getLikes().stream()
@@ -157,7 +154,7 @@ public class VideoService {
 
     public BelongEvaluateDTO checkBelongEvaluate(RequestBelongEvaluateDTO dto,
                                                  Long userId) {
-        Video video = getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.getVideoId());
         BelongEvaluateDTO belongEvaluateDTO = new BelongEvaluateDTO();
 
         for (Like like : video.getLikes()) {
@@ -175,32 +172,10 @@ public class VideoService {
         return belongEvaluateDTO;
     }
 
-    private void validateAlreadyEvaluation(Collection<? extends Reaction> reactions,
-                                           Long videoId, Long userId) {
-        for (Reaction reaction : reactions) {
-            if (reaction.getUser().getId().equals(userId)) {
-                throw new VideoAlreadyEvaluateException(
-                        String.format("Video with id %s has already evaluated!", videoId));
-            }
-        }
-    }
-
-    private Reaction createReaction(EvaluateType type, User user, Video video) {
-        return switch (type) {
-            case LIKE -> ReactionFactory.like(video, user);
-            case DISLIKE -> ReactionFactory.dislike(video, user);
-        };
-    }
-
     private void validateCreatorOfVideo(Video video, Long userId) {
         if (!video.getCreator().getId().equals(userId)) {
             throw new NoRightsException("You are not creator of video!");
         }
-    }
-
-    private Video getVideoById(Long videoId) {
-        return videoRepository.findById(videoId).orElseThrow(()
-                -> new VideoNotFoundException(String.format("Video with id %d not found!", videoId)));
     }
 
     private Video getVideoByPath(String filename) {

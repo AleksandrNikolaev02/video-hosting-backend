@@ -18,4 +18,5 @@ public class GetVideoDTO {
     private String path;
     private VideoStatus videoStatus;
     private LocalDateTime date;
+    private PreviewDTO dto;
 }

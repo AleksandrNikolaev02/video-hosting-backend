@@ -27,7 +27,7 @@ public class Preview {
     private Long id;
     @Column(name = "path")
     private String path;
-    @OneToOne(orphanRemoval = true)
+    @OneToOne
     @JoinColumn(name = "video_id", nullable = false)
     private Video video;
 }

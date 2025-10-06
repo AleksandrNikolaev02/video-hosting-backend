@@ -10,6 +10,8 @@ import com.example.file_service.dto.SaveChunkDTO;
 import com.example.file_service.dto.SaveChunkResponseDTO;
 import com.example.file_service.dto.SaveChunksDTO;
 import com.example.file_service.dto.SavePreviewDTO;
+import com.example.file_service.dto.SavePreviewResponseDTO;
+import com.example.file_service.dto.UpdatePreviewDTO;
 import com.example.file_service.mapper.FileEntityMapper;
 import com.example.file_service.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +29,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -107,11 +110,10 @@ public class FileController {
                          schema = @Schema(implementation = String.class)))
     })
     @PostMapping(value = "/save_preview")
-    public ResponseEntity<String> savePreview(@Validated @RequestBody SavePreviewDTO dto,
-                                              @RequestHeader("X-user-id") Long userId) {
-        fileService.savePreview(dto, userId);
-
-        return ResponseEntity.ok("The file was saved successfully!");
+    public ResponseEntity<SavePreviewResponseDTO> savePreview(@RequestPart("file") MultipartFile file,
+                                                              @RequestPart("dto") SavePreviewDTO dto,
+                                                              @RequestHeader("X-user-id") Long userId) {
+        return ResponseEntity.ok(fileService.savePreview(userId, file, dto));
     }
 
     @Operation(summary = "Получение превью видео")
@@ -122,8 +124,12 @@ public class FileController {
             @ApiResponse(responseCode = "404", description = "File not found by filename: <filename>")
     })
     @PostMapping(value = "/get_preview")
-    public ResponseEntity<GetPreviewDTO> getPreview(@Validated @RequestBody RequestGetPreviewDTO dto) {
-        return ResponseEntity.ok(fileService.getPreview(dto));
+    public ResponseEntity<byte[]> getPreview(@Validated @RequestBody RequestGetPreviewDTO dto) {
+        GetPreviewDTO getPreviewDTO = fileService.getPreview(dto);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(getPreviewDTO.contentType()))
+                .body(getPreviewDTO.data());
     }
 
     @Operation(summary = "Удаление превью видео")
@@ -131,9 +137,20 @@ public class FileController {
             @ApiResponse(responseCode = "200"),
             @ApiResponse(responseCode = "404", description = "File not found by filename: <filename>")
     })
-    @DeleteMapping(value = "delete_preview")
-    public ResponseEntity<Void> deletePreview(@Validated @RequestBody DeletePreviewDTO dto) {
-        fileService.deletePreview(dto);
+    @DeleteMapping(value = "/delete_preview")
+    public ResponseEntity<Void> deletePreview(@Validated @RequestBody DeletePreviewDTO dto,
+                                              @RequestHeader("X-user-id") Long userId) {
+        fileService.deletePreview(dto, userId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Обновление превью видео")
+    @PutMapping(value = "update_preview")
+    public ResponseEntity<Void> updatePreview(@Validated @RequestPart("dto") UpdatePreviewDTO dto,
+                                              @RequestPart("file") MultipartFile file,
+                                              @RequestHeader("X-user-id") Long userId) {
+        fileService.updatePreview(dto, userId, file);
 
         return ResponseEntity.ok().build();
     }

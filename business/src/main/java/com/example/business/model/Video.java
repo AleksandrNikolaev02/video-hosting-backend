@@ -51,6 +51,6 @@ public class Video {
     private VideoStatus videoStatus;
     @Column(name = "created_at")
     private LocalDateTime date;
-    @OneToOne(mappedBy = "video", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "video", orphanRemoval = true, cascade = CascadeType.ALL)
     private Preview preview;
 }
