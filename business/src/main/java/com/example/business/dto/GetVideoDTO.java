@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -19,4 +20,5 @@ public class GetVideoDTO {
     private VideoStatus videoStatus;
     private LocalDateTime date;
     private PreviewDTO dto;
+    private Set<String> tags;
 }

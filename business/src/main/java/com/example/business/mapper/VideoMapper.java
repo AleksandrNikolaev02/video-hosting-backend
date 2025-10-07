@@ -14,6 +14,11 @@ public interface VideoMapper {
                                          video.getPreview().getId(),
                                          video.getPreview().getPath())) : null)
             """)
+    @Mapping(target = "tags", expression = """
+            java(video.getTags().stream()
+                                .map(com.example.business.model.Tag::getName)
+                                .collect(java.util.stream.Collectors.toSet()))
+            """)
     GetVideoDTO getVideoDtoFromVideo(Video video);
 
     @Mapping(target = "status", source = "videoStatus")

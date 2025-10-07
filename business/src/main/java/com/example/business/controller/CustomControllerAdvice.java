@@ -5,6 +5,7 @@ import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -52,5 +53,14 @@ public class CustomControllerAdvice {
     public ResponseEntity<String> handle(VideoAlreadyEvaluateException exception) {
         log.error(exception.getMessage());
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_GATEWAY);
+    }
+
+    @ExceptionHandler(value = DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handle(DataIntegrityViolationException exception) {
+        Map<String, String> description = new HashMap<>();
+        description.put("message", "Запись с таким значением уже есть в таблице!");
+
+        log.error(exception.getMessage());
+        return ResponseEntity.status(409).body(description);
     }
 }

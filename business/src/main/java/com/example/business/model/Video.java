@@ -10,11 +10,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,12 +25,15 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "videos")
-@NoArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Video {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "video_id_generator")
@@ -53,4 +59,12 @@ public class Video {
     private LocalDateTime date;
     @OneToOne(mappedBy = "video", orphanRemoval = true, cascade = CascadeType.ALL)
     private Preview preview;
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE,
+                           CascadeType.PERSIST, CascadeType.REFRESH})
+    @JoinTable(
+            name = "videos_tags",
+            joinColumns = @JoinColumn(name = "video_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id")
+    )
+    private Set<Tag> tags = new HashSet<>();
 }

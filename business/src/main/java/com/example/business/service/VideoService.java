@@ -17,8 +17,8 @@ import com.example.business.model.User;
 import com.example.business.model.Video;
 import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
+import com.example.business.validator.PermissionValidator;
 import com.example.dto.CreateVideoDTO;
-import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +35,7 @@ public class VideoService {
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
     private final FindEntityService findEntityService;
+    private final PermissionValidator permissionValidator;
 
     @KafkaListener(topics = "${topics.create-video}",
                    groupId = "${kafka.group-id}",
@@ -52,7 +53,7 @@ public class VideoService {
     public void updateVideo(UpdateVideoDTO dto, String path, Long userId) {
         Video video = getVideoByPath(path);
 
-        validateCreatorOfVideo(video, userId);
+        permissionValidator.validateCreatorOfVideo(video, userId);
 
         Optional.ofNullable(dto.description()).ifPresent(video::setDescription);
         Optional.ofNullable(dto.title()).ifPresent(video::setName);
@@ -75,7 +76,7 @@ public class VideoService {
     public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {
         Video video = findEntityService.getVideoById(dto.getVideoId());
 
-        validateCreatorOfVideo(video, userId);
+        permissionValidator.validateCreatorOfVideo(video, userId);
 
         video.setPath(dto.getPath());
 
@@ -85,7 +86,7 @@ public class VideoService {
     public void postVideo(String filename, Long userId) {
         Video video = getVideoByPath(filename);
 
-        validateCreatorOfVideo(video, userId);
+        permissionValidator.validateCreatorOfVideo(video, userId);
 
         video.setVideoStatus(VideoStatus.UPLOADED);
         video.setDate(LocalDateTime.now());
@@ -149,6 +150,8 @@ public class VideoService {
     }
 
     public GetEvaluatesVideoDTO getEvaluates(Long videoId) {
+        findEntityService.getVideoById(videoId);
+
         return videoRepository.getAllEvaluatesByVideo(videoId);
     }
 
@@ -170,12 +173,6 @@ public class VideoService {
         }
 
         return belongEvaluateDTO;
-    }
-
-    private void validateCreatorOfVideo(Video video, Long userId) {
-        if (!video.getCreator().getId().equals(userId)) {
-            throw new NoRightsException("You are not creator of video!");
-        }
     }
 
     private Video getVideoByPath(String filename) {
