@@ -1,5 +1,6 @@
 package com.example.file_service.service;
 
+import com.example.dto.CreateVideoDTO;
 import com.example.dto.Event;
 import com.example.dto.FileDataDTO;
 import com.example.dto.FileEventDTO;
@@ -7,16 +8,30 @@ import com.example.dto.FileResponseDTO;
 import com.example.dto.Status;
 import com.example.dto.VideoLoadDTO;
 import com.example.file_service.config.FileConfig;
+import com.example.file_service.config.TopicConfig;
 import com.example.file_service.dto.ChunkFileDTO;
+import com.example.file_service.dto.DeletePreviewDTO;
+import com.example.file_service.dto.GetPreviewDTO;
+import com.example.file_service.dto.RequestGetPreviewDTO;
+import com.example.file_service.dto.SaveChunkResponseDTO;
 import com.example.file_service.dto.SaveChunksDTO;
+import com.example.file_service.dto.SavePreviewDTO;
+import com.example.file_service.dto.SavePreviewResponseDTO;
+import com.example.file_service.dto.UpdatePreviewDTO;
 import com.example.file_service.exception.FileNotFoundByKeyException;
 import com.example.file_service.exception.FileReadException;
 import com.example.file_service.exception.FileStorageException;
+import com.example.file_service.exception.MinioException;
+import com.example.file_service.exception.NoRightsException;
+import com.example.file_service.exception.PreviewNotFoundByFilename;
 import com.example.file_service.interfaces.Mapper;
+import com.example.file_service.mapper.FileEntityMapper;
 import com.example.file_service.metric.CustomMetricService;
-import com.example.file_service.model.FileEntity;
+import com.example.file_service.model.PreviewEntity;
+import com.example.file_service.model.VideoEntity;
 import com.example.file_service.model.PartFile;
-import com.example.file_service.repository.FileEntityRepository;
+import com.example.file_service.repository.PreviewEntityRepository;
+import com.example.file_service.repository.VideoEntityRepository;
 import com.example.file_service.util.EventToTopicsStorage;
 import io.minio.BucketExistsArgs;
 import io.minio.ComposeObjectArgs;
@@ -27,6 +42,7 @@ import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.RemoveObjectsArgs;
 import io.minio.Result;
 import io.minio.messages.DeleteObject;
@@ -42,6 +58,7 @@ import org.springframework.http.HttpRange;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -57,32 +74,42 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileService {
     private final FileConfig fileConfig;
+    private final TopicConfig topicConfig;
     private final MinioClient minioClient;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final RedisTemplate<String, String> redisTemplate;
+    private final KafkaTemplate<String, CreateVideoDTO> videoDTOKafkaTemplate;
     private final EventToTopicsStorage eventToTopicsStorage;
     private final CustomMetricService customMetricService;
-    private final FileEntityRepository fileEntityRepository;
+    private final VideoEntityRepository videoEntityRepository;
+    private final PreviewEntityRepository previewEntityRepository;
     private final Mapper mapper;
+    private final FileEntityMapper fileEntityMapper;
 
     @SneakyThrows
     @Transactional
-    public void storeChunkFile(VideoLoadDTO dto, long userId, int index) {
-        Optional<FileEntity> file = fileEntityRepository.findByKey(dto.key());
+    public SaveChunkResponseDTO storeChunkFile(VideoLoadDTO dto, long userId,
+                                               int index, String originalFilename) {
+        Optional<VideoEntity> file = videoEntityRepository.findByKey(dto.key());
+
+        SaveChunkResponseDTO saveChunkResponseDTO = new SaveChunkResponseDTO();
 
         if (!isBucketExists(fileConfig.getBucket())) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(fileConfig.getBucket()).build());
         }
 
         if (file.isEmpty()) {
-            FileEntity fileEntity = new FileEntity();
-            fileEntity.setUserId(userId);
-            fileEntity.setFilename(UUID.randomUUID().toString());
-            fileEntity.setContentType(dto.contentType());
-            fileEntity.setKey(dto.key());
-            fileEntity.setLength(0L);
+            VideoEntity videoEntity = new VideoEntity();
+            String filename = UUID.randomUUID().toString();
 
-            file = Optional.of(fileEntityRepository.save(fileEntity));
+            videoEntity.setUserId(userId);
+            videoEntity.setFilename(filename);
+            videoEntity.setContentType(dto.contentType());
+            videoEntity.setKey(dto.key());
+            videoEntity.setLength(0L);
+            videoEntity.setOriginalFilename(originalFilename);
+
+            file = Optional.of(videoEntityRepository.save(videoEntity));
         }
 
         PartFile part = new PartFile();
@@ -95,12 +122,17 @@ public class FileService {
 
         PutObjectArgs putObjectArgs = PutObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
-                .object(userId + "/" + dto.partName())
+                .object(String.format("%d/%s/%s/%s", userId,fileConfig.getVideoPath(),
+                        file.get().getFilename(), dto.partName()))
                 .stream(new ByteArrayInputStream(dto.data()), dto.data().length, -1)
                 .contentType(dto.contentType())
                 .build();
 
+        saveChunkResponseDTO.setFilename(file.get().getFilename());
+
         saveFileInMinio(putObjectArgs);
+
+        return saveChunkResponseDTO;
     }
 
     @SneakyThrows
@@ -108,37 +140,42 @@ public class FileService {
     public void saveChunkFile(SaveChunksDTO dto) {
         List<ComposeSource> sources = new ArrayList<>();
 
-        FileEntity file = fileEntityRepository.findByKey(dto.key()).orElseThrow(() -> {
-            throw new FileNotFoundByKeyException(String.format("File not found by key: %d", dto.key()));
-        });
+        VideoEntity file = videoEntityRepository.findByKey(dto.key()).orElseThrow(() ->
+            new FileNotFoundByKeyException(String.format("File not found by key: %s", dto.key()))
+        );
 
         for (PartFile part : file.getParts()) {
             sources.add(ComposeSource.builder()
                     .bucket(fileConfig.getBucket())
-                    .object(dto.userId() + "/" + part.getPartName())
+                    .object(String.format("%d/%s/%s/%s", dto.userId(),fileConfig.getVideoPath(),
+                            file.getFilename(), part.getPartName()))
                     .build());
         }
 
         minioClient.composeObject(
                 ComposeObjectArgs.builder()
                         .bucket(fileConfig.getBucket())
-                        .object(dto.userId() + "/" + file.getFilename())
+                        .object(String.format("%d/%s/%s", dto.userId(),fileConfig.getVideoPath(),
+                                file.getFilename()))
                         .sources(sources)
                         .userMetadata(Map.of("Original-Content-Type", file.getContentType()))
                         .build()
         );
+
+        videoDTOKafkaTemplate.send(topicConfig.getCreateVideo(),
+                                   fileEntityMapper.getCreateVideoDtoFromVideoEntity(file));
     }
 
-    public Long findUniqueKeyForFile() {
-        return fileEntityRepository.findMaxId() + 1;
+    public String findUniqueKeyForFile() {
+        return UUID.randomUUID().toString();
     }
 
-    public List<FileEntity> getFileEntitiesByUserId(Long userId) {
-        return fileEntityRepository.findByUserId(userId);
+    public List<VideoEntity> getFileEntitiesByUserId(Long userId) {
+        return videoEntityRepository.findByUserId(userId);
     }
 
     @KafkaListener(topics = "${topics.file-events}",
-                   groupId = "${spring.kafka.consumer.group-id}",
+                   groupId = "${kafka.group-id}",
                    errorHandler = "customKafkaErrorHandler")
     @SneakyThrows
     public void storeFile(String event) {
@@ -163,6 +200,92 @@ public class FileService {
     }
 
     @SneakyThrows
+    public SavePreviewResponseDTO savePreview(Long userId, MultipartFile file, SavePreviewDTO dto) {
+        String filename = UUID.randomUUID().toString();
+
+        PutObjectArgs args = PutObjectArgs.builder()
+                .bucket(fileConfig.getBucket())
+                .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), filename))
+                .stream(new ByteArrayInputStream(file.getBytes()), file.getSize(), -1)
+                .contentType(file.getContentType())
+                .build();
+
+        saveFileInMinio(args);
+
+        previewEntityRepository.save(createPreviewEntity(filename, file.getSize(),
+                                     userId, file.getContentType(), dto.originalFilename()));
+
+        return new SavePreviewResponseDTO(file.getContentType(), filename);
+    }
+
+    public GetPreviewDTO getPreview(RequestGetPreviewDTO dto) {
+        PreviewEntity preview = getPreviewByFilename(dto.filename());
+
+        String path = String.format("%d/%s/%s", preview.getUserId(), fileConfig.getPreviewPath(), dto.filename());
+        FileDataDTO fileDataDTO = getFile(path);
+
+        return new GetPreviewDTO(fileDataDTO.getData(), preview.getContentType());
+    }
+
+    @SneakyThrows
+    public void deletePreview(DeletePreviewDTO dto, Long userId) {
+        PreviewEntity preview = getPreviewByFilename(dto.filename());
+
+        validatePermission(preview, userId);
+
+        RemoveObjectArgs args = RemoveObjectArgs.builder()
+                .bucket(fileConfig.getBucket())
+                .object(String.format("%d/%s/%s", preview.getUserId(), fileConfig.getPreviewPath(), dto.filename()))
+                .build();
+
+        minioClient.removeObject(args);
+
+        previewEntityRepository.delete(preview);
+    }
+
+    public void updatePreview(UpdatePreviewDTO dto, Long userId, MultipartFile file) {
+        PreviewEntity preview = getPreviewByFilename(dto.filename());
+
+        validatePermission(preview, userId);
+
+        PutObjectArgs args = createPutObjectArgsFromFile(file, userId, preview.getFilename());
+
+        saveFileInMinio(args);
+
+        preview.setContentType(file.getContentType());
+        preview.setLength(file.getSize());
+        preview.setOriginalFilename(dto.originalFilename());
+
+        previewEntityRepository.save(preview);
+    }
+
+    private PutObjectArgs createPutObjectArgsFromFile(MultipartFile file, Long userId, String filename) {
+        try {
+            return PutObjectArgs.builder()
+                    .bucket(fileConfig.getBucket())
+                    .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), filename))
+                    .stream(new ByteArrayInputStream(file.getBytes()), file.getSize(), -1)
+                    .contentType(file.getContentType())
+                    .build();
+        } catch (Exception exception) {
+            throw new MinioException("Error reading file!", exception);
+        }
+    }
+
+    private PreviewEntity createPreviewEntity(String filename, Long length,
+                                              Long userId, String contentType, String originalFilename) {
+        PreviewEntity preview = new PreviewEntity();
+
+        preview.setLength(length);
+        preview.setUserId(userId);
+        preview.setContentType(contentType);
+        preview.setFilename(filename);
+        preview.setOriginalFilename(originalFilename);
+
+        return preview;
+    }
+
+    @SneakyThrows
     private boolean isBucketExists(String bucket) {
         return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
     }
@@ -176,13 +299,14 @@ public class FileService {
                 .build();
     }
 
-    @SneakyThrows
     private ObjectWriteResponse saveFileInMinio(PutObjectArgs args) {
-        ObjectWriteResponse response = minioClient.putObject(args);
-
-        log.info("Процесс: сохранение файла. Директория: {}", response.bucket() + "/" + response.object());
-
-        return response;
+        try {
+            ObjectWriteResponse response = minioClient.putObject(args);
+            log.info("Процесс: сохранение файла. Директория: {}", response.bucket() + "/" + response.object());
+            return response;
+        } catch (Exception exception) {
+            throw new MinioException("Error saving file in Minio!", exception);
+        }
     }
 
     private FileResponseDTO createFileResponseDTO(FileEventDTO dto, ObjectWriteResponse response) {
@@ -226,7 +350,7 @@ public class FileService {
             end = Math.min(start + chunkSize - 1, fileLength - 1);
         }
 
-        String path = userId + "/" + filename;
+        String path = String.format("%d/%s/%s", userId, fileConfig.getVideoPath(), filename);
 
         GetObjectArgs args = GetObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
@@ -252,7 +376,7 @@ public class FileService {
         String contentType = redisTemplate.opsForValue().get(filename);
 
         if (contentType == null) {
-            contentType = fileEntityRepository.getContentTypeByFilename(filename);
+            contentType = videoEntityRepository.getContentTypeByFilename(filename);
             redisTemplate.opsForValue().set(filename, contentType);
         }
 
@@ -286,7 +410,7 @@ public class FileService {
     }
 
     @KafkaListener(topics = "${topics.delete-file-request}",
-                   groupId = "${spring.kafka.consumer.group-id}",
+                   groupId = "${kafka.group-id}",
                    errorHandler = "customKafkaErrorHandler")
     @SneakyThrows
     public void deleteDirectory(String path) {
@@ -336,6 +460,18 @@ public class FileService {
     }
 
     private long getFileSize(String filename) {
-        return fileEntityRepository.getFileSize(filename);
+        return videoEntityRepository.getFileSize(filename);
+    }
+
+    private PreviewEntity getPreviewByFilename(String filename) {
+        return previewEntityRepository.findByFilename(filename).orElseThrow(
+                () -> new PreviewNotFoundByFilename(String.format("File not found by filename: %s", filename))
+        );
+    }
+
+    private void validatePermission(PreviewEntity preview, Long userId) {
+        if (!preview.getUserId().equals(userId)) {
+            throw new NoRightsException("You aren't creator of course!");
+        }
     }
 }

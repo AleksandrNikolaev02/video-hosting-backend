@@ -16,9 +16,9 @@ public class KafkaFileListener {
     private final JsonMapper mapper;
 
     @KafkaListener(topics = "${topics.get-file-request}",
-            groupId = "${spring.kafka.consumer.group-id}",
+            groupId = "${kafka.group-id}",
             errorHandler = "customKafkaErrorHandler")
-    @SendTo("#{topicConfig.getGetFileReply()}")
+    //@SendTo("#{topicConfig.getGetFileReply()}")
     @SneakyThrows
     public String getFile(String path) {
         FileDataDTO dto = fileService.getFile(path);

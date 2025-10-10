@@ -13,7 +13,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final UserRepository userRepository;
 
-    @KafkaListener(topics = "${topics.create-user}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(topics = "${topics.create-user}", groupId = "${kafka.group-id}")
     public void createUser(UserDTO dto) {
         userRepository.save(userMapper.getUserFromUserDTO(dto));
     }

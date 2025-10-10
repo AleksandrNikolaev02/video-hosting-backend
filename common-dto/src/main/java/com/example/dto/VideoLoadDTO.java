@@ -7,6 +7,6 @@ public record VideoLoadDTO(
         byte[] data,
         String contentType,
         String partName,
-        Long key
+        String key
 ) {
 }
