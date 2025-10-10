@@ -10,6 +10,8 @@ import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.mapper.VideoMapper;
+import com.example.business.model.ElasticVideo;
+import com.example.business.service.SearchService;
 import com.example.business.service.VideoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -18,6 +20,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +43,7 @@ import java.util.List;
 public class VideoController {
     private final VideoService videoService;
     private final VideoMapper videoMapper;
+    private final SearchService searchService;
 
     @PostMapping(value = "/create")
     @Operation(summary = "Создать базовое видео")
@@ -115,10 +119,17 @@ public class VideoController {
         return ResponseEntity.ok(videoService.checkBelongEvaluate(dto, userId));
     }
 
+    @Operation(summary = "Поставить реакцию на видео")
     @PostMapping(value = "/react")
     public ResponseEntity<Void> reactVideo(@RequestHeader("X-user-id") Long userId,
                                            @RequestBody EvaluateVideoDTO dto) {
         videoService.evaluateVideo(dto, userId);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Найти видео по запросу пользователя")
+    @GetMapping(value = "/search")
+    public List<ElasticVideo> searchVideo(@RequestParam(name = "query") String query) {
+        return searchService.searchVideo(query);
     }
 }

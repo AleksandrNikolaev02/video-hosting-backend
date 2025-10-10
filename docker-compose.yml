@@ -205,11 +205,41 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
+  elasticsearch:
+    image: elasticsearch:8.18.1
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      my-network:
+
+  logstash:
+    image: logstash:8.18.1
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - ./conf/postgresql-42.7.5.jar:/usr/share/logstash/postgresql-42.7.5.jar
+    depends_on:
+      - db
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      my-network:
+
 volumes:
   postgres_data:
   minio_data:
   redis_data:
   kafka_data:
+  elasticsearch_data:
 
 networks:
   my-network:
