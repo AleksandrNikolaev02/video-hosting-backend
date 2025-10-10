@@ -19,6 +19,7 @@ public interface VideoMapper {
                                 .map(com.example.business.model.Tag::getName)
                                 .collect(java.util.stream.Collectors.toSet()))
             """)
+    @Mapping(target = "countViewing", expression = "java(video.getViewings().size())")
     GetVideoDTO getVideoDtoFromVideo(Video video);
 
     @Mapping(target = "status", source = "videoStatus")

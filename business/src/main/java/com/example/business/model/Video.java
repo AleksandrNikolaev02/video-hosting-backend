@@ -67,4 +67,6 @@ public class Video {
             inverseJoinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id")
     )
     private Set<Tag> tags = new HashSet<>();
+    @OneToMany(mappedBy = "video", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Collection<Viewing> viewings = new ArrayList<>();
 }

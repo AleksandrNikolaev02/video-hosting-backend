@@ -16,4 +16,7 @@
     <include file="db/changelog/changes/create-tags-table-2025-10-06.xml"/>
     <include file="db/changelog/changes/create-videos_tags-table-2025-10-06.xml"/>
     <include file="db/changelog/changes/add-unique-constraint-to-tags-table-2025-10-06.xml"/>
+    <include file="db/changelog/changes/create-viewing-table-2025-10-09.xml"/>
+    <include file="db/changelog/changes/create-viewing_id_generator-2025-10-09.xml"/>
+    <include file="db/changelog/changes/add-unique-constraint-to-viewing-2025-10-09.xml"/>
 </databaseChangeLog>
