@@ -11,7 +11,7 @@ public interface ElasticVideoRepository extends ElasticsearchRepository<ElasticV
             {
                 "multi_match": {
                     "query": "?0",
-                    "fields": [ "name^2", "description" ],
+                    "fields": [ "name^2", "description", "names" ],
                     "fuzziness": "AUTO"
                 }
             }

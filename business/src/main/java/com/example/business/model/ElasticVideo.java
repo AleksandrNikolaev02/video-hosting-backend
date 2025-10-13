@@ -11,6 +11,7 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Document(indexName = "videos")
 @Getter
@@ -27,4 +28,6 @@ public class ElasticVideo {
     private String name;
     private String path;
     private LocalDateTime createdAt;
+    @Field(type = FieldType.Text, analyzer = "standard")
+    private List<String> names;
 }
