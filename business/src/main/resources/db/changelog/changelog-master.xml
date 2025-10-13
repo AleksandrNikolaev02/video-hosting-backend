@@ -19,4 +19,9 @@
     <include file="db/changelog/changes/create-viewing-table-2025-10-09.xml"/>
     <include file="db/changelog/changes/create-viewing_id_generator-2025-10-09.xml"/>
     <include file="db/changelog/changes/add-unique-constraint-to-viewing-2025-10-09.xml"/>
+    <include file="db/changelog/changes/create-playlists-sequence-2025-10-13.xml"/>
+    <include file="db/changelog/changes/create-playlist-table-2025-10-13.xml"/>
+    <include file="db/changelog/changes/add-foreign-ley-constraint-2025-10-13.xml"/>
+    <include file="db/changelog/changes/remove-unique-constraint-table-viewing-2025-10-13.xml"/>
+    <include file="db/changelog/changes/add-correct-unique-constraint-table-viewing-2025-10-13.xml"/>
 </databaseChangeLog>

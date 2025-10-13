@@ -2,6 +2,7 @@ package com.example.business.service;
 
 import com.example.business.dto.BelongEvaluateDTO;
 import com.example.business.dto.CreateBaseVideoDTO;
+import com.example.business.dto.DeleteVideoDTO;
 import com.example.business.dto.EvaluateVideoDTO;
 import com.example.business.dto.GetEvaluatesVideoDTO;
 import com.example.business.dto.RequestBelongEvaluateDTO;
@@ -71,6 +72,15 @@ public class VideoService {
         video.setVideoStatus(VideoStatus.DRAFT);
 
         return videoRepository.save(video);
+    }
+
+    @Transactional
+    public void deleteVideo(DeleteVideoDTO dto, Long userId) {
+        Video video = findEntityService.getVideoById(dto.videoId());
+
+        permissionValidator.validateCreatorOfVideo(video, userId);
+
+        videoRepository.delete(video);
     }
 
     public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {

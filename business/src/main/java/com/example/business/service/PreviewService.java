@@ -8,6 +8,7 @@ import com.example.business.model.Video;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -42,6 +43,7 @@ public class PreviewService {
         saveEntityService.save(video);
     }
 
+    @Transactional
     public void deletePreview(DeletePreviewDTO dto, Long userId) {
         Video video = findEntityService.getVideoById(dto.videoId());
 

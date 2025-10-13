@@ -1,5 +1,6 @@
 package com.example.business.controller;
 
+import com.example.business.exception.PlaylistNotFoundException;
 import com.example.business.exception.UserNotFoundException;
 import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
@@ -62,5 +63,11 @@ public class CustomControllerAdvice {
 
         log.error(exception.getMessage());
         return ResponseEntity.status(409).body(description);
+    }
+
+    @ExceptionHandler(value = PlaylistNotFoundException.class)
+    public ResponseEntity<String> handle(PlaylistNotFoundException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 }

@@ -3,6 +3,7 @@ package com.example.business.controller;
 import com.example.business.dto.BelongEvaluateDTO;
 import com.example.business.dto.CreateBaseVideoDTO;
 import com.example.business.dto.CreateBaseVideoResponseDTO;
+import com.example.business.dto.DeleteVideoDTO;
 import com.example.business.dto.EvaluateVideoDTO;
 import com.example.business.dto.GetEvaluatesVideoDTO;
 import com.example.business.dto.GetVideoDTO;
@@ -20,11 +21,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -57,6 +59,20 @@ public class VideoController {
         return ResponseEntity.status(201).body(videoMapper.getCreateVideoResponseDtoFromVideo(
                 videoService.createVideo(dto, userId)
         ));
+    }
+
+    @DeleteMapping(value = "/delete")
+    @Operation(summary = "Удалить видео")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200"),
+            @ApiResponse(responseCode = "404",
+                    content = @Content(schema = @Schema(implementation = String.class)))
+    })
+    public ResponseEntity<Void> deleteVideo(@RequestHeader("X-user-id") Long userId,
+                                            @RequestBody DeleteVideoDTO dto) {
+        videoService.deleteVideo(dto, userId);
+
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Опубликовать видео на сервисе")
@@ -130,6 +146,11 @@ public class VideoController {
     @Operation(summary = "Найти видео по запросу пользователя")
     @GetMapping(value = "/search")
     public List<ElasticVideo> searchVideo(@RequestParam(name = "query") String query) {
-        return searchService.searchVideo(query);
+        return searchService.searchVideo(query)
+                .stream()
+                .peek(video -> video.setNames(Arrays.stream(video.getNames()
+                                                                             .get(0)
+                                                                             .split(", "))
+                                                                        .toList())).toList();
     }
 }

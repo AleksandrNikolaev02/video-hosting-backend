@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create-playlist-table" author="alex">
+        <createTable tableName="playlists">
+            <column name="id" type="java.lang.Long">
+                <constraints primaryKey="true" unique="true" nullable="false"/>
+            </column>
+            <column name="name" type="java.lang.String"/>
+            <column name="created_at" type="datetime"/>
+            <column name="owner_id" type="java.lang.Long"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="playlists"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -59,6 +59,9 @@ public class Video {
     private LocalDateTime date;
     @OneToOne(mappedBy = "video", orphanRemoval = true, cascade = CascadeType.ALL)
     private Preview preview;
+    @ManyToOne
+    @JoinColumn(name = "playlist_id")
+    private Playlist playlist;
     @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE,
                            CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(

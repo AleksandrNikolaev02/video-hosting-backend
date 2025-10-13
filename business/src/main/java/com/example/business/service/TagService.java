@@ -9,6 +9,7 @@ import com.example.business.repository.VideoRepository;
 import com.example.business.validator.PermissionValidator;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class TagService {
         videoRepository.save(video);
     }
 
+    @Transactional
     public void deleteTags(TagDTO dto, Long userId) {
         Video video = findEntityService.getVideoById(dto.videoId());
 
