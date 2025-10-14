@@ -12,6 +12,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Document(indexName = "videos")
 @Getter
@@ -21,12 +22,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ElasticVideo {
     @Id
-    private Long id;
+    private UUID filename;
     @Field(type = FieldType.Text, analyzer = "standard")
     private String description;
     @Field(type = FieldType.Text, analyzer = "standard")
     private String name;
-    private String path;
     private LocalDateTime createdAt;
     @Field(type = FieldType.Text, analyzer = "standard")
     private List<String> names;
