@@ -12,6 +12,8 @@ import com.example.business.repository.VideoRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 @AllArgsConstructor
 public class FindEntityService {
@@ -19,9 +21,9 @@ public class FindEntityService {
     private final UserRepository userRepository;
     private final PlaylistRepository playlistRepository;
 
-    public Video getVideoById(Long videoId) {
-        return videoRepository.findById(videoId).orElseThrow(()
-                -> new VideoNotFoundException(String.format("Video with id %d not found!", videoId)));
+    public Video getVideoById(UUID filename) {
+        return videoRepository.findById(filename).orElseThrow(()
+                -> new VideoNotFoundException(String.format("Video with id %s not found!", filename)));
     }
 
     public User getUserById(Long userId) {

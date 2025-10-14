@@ -19,7 +19,7 @@ public class PreviewService {
     private final SaveEntityService saveEntityService;
 
     public void createPreview(CreateBasePreviewDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         validatePermissions(video, userId);
 
@@ -32,7 +32,7 @@ public class PreviewService {
     }
 
     public void updatePreview(UpdatePreviewDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         validatePermissions(video, userId);
 
@@ -45,7 +45,7 @@ public class PreviewService {
 
     @Transactional
     public void deletePreview(DeletePreviewDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         validatePermissions(video, userId);
 

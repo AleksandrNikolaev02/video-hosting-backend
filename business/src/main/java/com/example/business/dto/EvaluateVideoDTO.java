@@ -1,16 +1,10 @@
 package com.example.business.dto;
 
 import com.example.business.enums.EvaluateType;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.util.UUID;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class EvaluateVideoDTO {
-    private Long videoId;
-    private EvaluateType evaluateType;
+public record EvaluateVideoDTO(
+        UUID filename,
+        EvaluateType evaluateType
+) {
 }

@@ -19,16 +19,15 @@ import com.example.business.model.Video;
 import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.PermissionValidator;
-import com.example.dto.CreateVideoDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -38,45 +37,47 @@ public class VideoService {
     private final FindEntityService findEntityService;
     private final PermissionValidator permissionValidator;
 
-    @KafkaListener(topics = "${topics.create-video}",
-                   groupId = "${kafka.group-id}",
-                   errorHandler = "createVideoHandler")
-    public void createVideo(CreateVideoDTO dto) {
-        User creator = getUserById(dto.getUserId());
+//    @KafkaListener(topics = "${topics.create-video}",
+//                   groupId = "${kafka.group-id}",
+//                   errorHandler = "createVideoHandler")
+//    public void createVideo(CreateVideoDTO dto) {
+//        User creator = getUserById(dto.getUserId());
+//
+//        Video video = new Video();
+//        video.setPath(dto.getPath());
+//        video.setCreator(creator);
+//
+//        videoRepository.save(video);
+//    }
 
-        Video video = new Video();
-        video.setPath(dto.getPath());
-        video.setCreator(creator);
-
-        videoRepository.save(video);
-    }
-
-    public void updateVideo(UpdateVideoDTO dto, String path, Long userId) {
-        Video video = getVideoByPath(path);
+    @Transactional
+    public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
+        Video video = findEntityService.getVideoById(filename);
 
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         Optional.ofNullable(dto.description()).ifPresent(video::setDescription);
         Optional.ofNullable(dto.title()).ifPresent(video::setName);
-
-        videoRepository.save(video);
     }
 
     public Video createVideo(CreateBaseVideoDTO dto, Long userId) {
         User creator = getUserById(userId);
 
         Video video = new Video();
-        video.setDescription(dto.getDescription());
-        video.setName(dto.getTitle());
+        video.setFilename(dto.filename());
+        video.setDescription(dto.description());
+        video.setName(dto.title());
         video.setCreator(creator);
         video.setVideoStatus(VideoStatus.DRAFT);
 
-        return videoRepository.save(video);
+        videoRepository.save(video);
+
+        return video;
     }
 
     @Transactional
     public void deleteVideo(DeleteVideoDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         permissionValidator.validateCreatorOfVideo(video, userId);
 
@@ -84,16 +85,17 @@ public class VideoService {
     }
 
     public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         permissionValidator.validateCreatorOfVideo(video, userId);
 
-        video.setPath(dto.getPath());
+        // FIXME: а вот тут надо подумать...
+        // video.setFilename(dto.getFilename());
 
         videoRepository.save(video);
     }
 
-    public void postVideo(String filename, Long userId) {
+    public void postVideo(UUID filename, Long userId) {
         Video video = getVideoByPath(filename);
 
         permissionValidator.validateCreatorOfVideo(video, userId);
@@ -105,12 +107,12 @@ public class VideoService {
     }
 
     public Page<Video> getVideos(Long userId, Pageable pageable) {
-        return videoRepository.findAllVideoByUserId(userId, pageable);
+        return videoRepository.findByCreatorOrderByFilename(userId, pageable);
     }
 
     @Transactional
     public void evaluateVideo(EvaluateVideoDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.filename());
         User user = getUserById(userId);
 
         Like currentLike = video.getLikes().stream()
@@ -121,7 +123,7 @@ public class VideoService {
                 .filter((dislike -> dislike.getUser().getId().equals(userId)))
                 .findFirst().orElse(null);
 
-        switch (dto.getEvaluateType()) {
+        switch (dto.evaluateType()) {
             case LIKE -> {
                 if (currentLike != null) {
                     video.getLikes().remove(currentLike);
@@ -159,15 +161,15 @@ public class VideoService {
         video.getLikes().add(like);
     }
 
-    public GetEvaluatesVideoDTO getEvaluates(Long videoId) {
-        findEntityService.getVideoById(videoId);
+    public GetEvaluatesVideoDTO getEvaluates(UUID filename) {
+        findEntityService.getVideoById(filename);
 
-        return videoRepository.getAllEvaluatesByVideo(videoId);
+        return videoRepository.getAllEvaluatesByVideo(filename);
     }
 
     public BelongEvaluateDTO checkBelongEvaluate(RequestBelongEvaluateDTO dto,
                                                  Long userId) {
-        Video video = findEntityService.getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.filename());
         BelongEvaluateDTO belongEvaluateDTO = new BelongEvaluateDTO();
 
         for (Like like : video.getLikes()) {
@@ -185,8 +187,8 @@ public class VideoService {
         return belongEvaluateDTO;
     }
 
-    private Video getVideoByPath(String filename) {
-        return videoRepository.findVideoByPath(filename).orElseThrow(()
+    private Video getVideoByPath(UUID filename) {
+        return videoRepository.findById(filename).orElseThrow(()
                 -> new VideoNotFoundException(String.format("Video with filename %s not found!", filename)));
     }
 

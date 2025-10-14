@@ -46,7 +46,7 @@ public class Reaction {
     @SequenceGenerator(name = "reaction_id_generator", sequenceName = "reaction_id_generator", allocationSize = 10)
     private Long id;
     @ManyToOne
-    @JoinColumn(name = "video_id", nullable = false)
+    @JoinColumn(name = "video_id", nullable = false, referencedColumnName = "filename")
     protected Video video;
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

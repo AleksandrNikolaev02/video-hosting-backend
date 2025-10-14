@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @Slf4j
 @AllArgsConstructor
@@ -15,10 +17,10 @@ public class ViewingService {
     private final FindEntityService findEntityService;
     private final SaveEntityService saveEntityService;
 
-    public void addViewing(Long userId, String userAgent, Long videoId) {
+    public void addViewing(Long userId, String userAgent, UUID filename) {
         String userIp = ipExtractor.getIp();
 
-        Video video = findEntityService.getVideoById(videoId);
+        Video video = findEntityService.getVideoById(filename);
 
         log.info("User-Agent: {}, IP: {}", userAgent, userIp);
 

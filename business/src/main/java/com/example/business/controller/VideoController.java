@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
@@ -82,26 +83,27 @@ public class VideoController {
                          content = @Content(schema = @Schema(implementation = String.class)))
     })
     @PostMapping(value = "/post")
-    public ResponseEntity<Void> postVideo(@RequestParam("filename") String filename,
+    public ResponseEntity<Void> postVideo(@RequestParam("filename") UUID filename,
                                           @RequestHeader("X-user-id") Long userId) {
         videoService.postVideo(filename, userId);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping(value = "/update")
+    @PutMapping(value = "/update/{filename}")
     @Operation(summary = "Обновить видео после его загрузки в микросервис с файлами")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204"),
             @ApiResponse(responseCode = "404", description = "Video not found!")
     })
     public ResponseEntity<Void> updateVideo(@RequestBody UpdateVideoDTO dto,
-                                            @RequestHeader("filename") String filename,
+                                            @PathVariable("filename") UUID filename,
                                             @RequestHeader("X-user-id") Long userId) {
         videoService.updateVideo(dto, filename, userId);
 
         return ResponseEntity.status(204).build();
     }
 
+    @Deprecated
     @PutMapping(value = "/update_path")
     @Operation(summary = "Синхронизировать имя видео с именем из микросервиса файлов")
     public ResponseEntity<Void> updatePathVideo(@Validated @RequestBody UpdatePathVideoDTO dto,
@@ -123,9 +125,9 @@ public class VideoController {
     }
 
     @Operation(summary = "Получить лайки и дизлайки конкретного видео")
-    @GetMapping(value = "/get_evaluates/{id}")
-    public ResponseEntity<GetEvaluatesVideoDTO> getEvaluates(@PathVariable("id") Long videoId) {
-        return ResponseEntity.ok(videoService.getEvaluates(videoId));
+    @GetMapping(value = "/get_evaluates/{filename}")
+    public ResponseEntity<GetEvaluatesVideoDTO> getEvaluates(@PathVariable("filename") UUID filename) {
+        return ResponseEntity.ok(videoService.getEvaluates(filename));
     }
 
     @Operation(summary = "Проверить принадлежность лайка и дизлайка видео")

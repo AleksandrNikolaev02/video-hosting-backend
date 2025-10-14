@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="change-files-table" author="alex">
+        <dropForeignKeyConstraint baseTableName="part_files" constraintName="fk_files"/>
+        <dropPrimaryKey tableName="files"/>
+        <modifyDataType tableName="files" columnName="filename" newDataType="UUID"/>
+        <dropColumn tableName="part_files" columnName="file_id"/>
+
+        <addColumn tableName="part_files">
+            <column name="file_id" type="uuid"/>
+        </addColumn>
+
+        <addUniqueConstraint tableName="files" columnNames="filename"/>
+        <dropColumn tableName="files" columnName="id"/>
+
+        <addForeignKeyConstraint baseTableName="part_files" baseColumnNames="file_id" constraintName="fk_files"
+                                 referencedTableName="files"
+                                 referencedColumnNames="filename"/>
+    </changeSet>
+
+</databaseChangeLog>

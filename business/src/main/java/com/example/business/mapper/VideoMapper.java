@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface VideoMapper {
     @Mapping(target = "title", source = "name")
-    @Mapping(target = "dto", expression = """
+    @Mapping(target = "video_preview", expression = """
             java(video.getPreview() != null ? (new com.example.business.dto.PreviewDTO(
                                          video.getPreview().getId(),
                                          video.getPreview().getPath())) : null)

@@ -1,7 +1,6 @@
 package com.example.business.service;
 
 import com.example.business.dto.TagDTO;
-import com.example.business.mapper.TagMapper;
 import com.example.business.model.Tag;
 import com.example.business.model.Video;
 import com.example.business.repository.TagRepository;
@@ -22,7 +21,7 @@ public class TagService {
     private final TagRepository tagRepository;
 
     public void addTags(TagDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         permissionValidator.validateCreatorOfVideo(video, userId);
 
@@ -39,7 +38,7 @@ public class TagService {
 
     @Transactional
     public void deleteTags(TagDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         permissionValidator.validateCreatorOfVideo(video, userId);
 

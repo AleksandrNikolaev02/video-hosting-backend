@@ -28,6 +28,6 @@ public class Preview {
     @Column(name = "path")
     private String path;
     @OneToOne
-    @JoinColumn(name = "video_id", nullable = false)
+    @JoinColumn(name = "video_id", nullable = false, referencedColumnName = "filename")
     private Video video;
 }

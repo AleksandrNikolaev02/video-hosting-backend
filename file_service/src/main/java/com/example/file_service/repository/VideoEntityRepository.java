@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface VideoEntityRepository extends JpaRepository<VideoEntity, Long> {
     @Query(value = "select * from files where files.user_id = :user_id order by files.filename",
@@ -17,8 +18,8 @@ public interface VideoEntityRepository extends JpaRepository<VideoEntity, Long> 
     Long findMaxId();
     @Query(value = "select files.length from files where files.filename = :filename",
            nativeQuery = true)
-    Long getFileSize(@Param("filename") String filename);
+    Long getFileSize(@Param("filename") UUID filename);
     @Query(value = "select files.content_type from files where files.filename = :filename",
            nativeQuery = true)
-    String getContentTypeByFilename(String filename);
+    String getContentTypeByFilename(UUID filename);
 }

@@ -24,4 +24,8 @@
     <include file="db/changelog/changes/add-foreign-ley-constraint-2025-10-13.xml"/>
     <include file="db/changelog/changes/remove-unique-constraint-table-viewing-2025-10-13.xml"/>
     <include file="db/changelog/changes/add-correct-unique-constraint-table-viewing-2025-10-13.xml"/>
+    <include file="db/changelog/changes/change-primary-key-videos-table-2025-10-14.xml"/>
+    <include file="db/changelog/changes/change-type-all-table-link-videos-2025-10-14.xml"/>
+    <include file="db/changelog/changes/add-all-foreign-keys-tables-2025-10-14.xml"/>
+    <include file="db/changelog/changes/add-unique-constraint-to-viewing-table-2025-10-14.xml"/>
 </databaseChangeLog>

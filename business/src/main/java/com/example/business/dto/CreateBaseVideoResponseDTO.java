@@ -6,12 +6,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateBaseVideoResponseDTO {
-    private Long id;
+    private UUID filename;
     private Long userId;
     private VideoStatus status;
 }

@@ -13,8 +13,8 @@ import lombok.Setter;
 public class FileEntity {
     @Column(name = "user_id")
     private Long userId;
-    @Column(name = "filename")
-    private String filename;
+    //@Column(name = "filename")
+    //private String filename;
     @Column(name = "content_type")
     private String contentType;
     @Column(name = "length")

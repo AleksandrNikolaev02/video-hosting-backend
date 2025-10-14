@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @Slf4j
 @RestController
 @AllArgsConstructor
@@ -29,8 +31,8 @@ public class ViewingController {
     @PostMapping(value = "/add/{video_id}")
     public ResponseEntity<Void> addViewing(@RequestHeader("User-Agent") String header,
                                            @RequestHeader(value = "X-user-id", required = false) Long userId,
-                                           @PathVariable("video_id") Long videoId) {
-        viewingService.addViewing(userId, header, videoId);
+                                           @PathVariable("video_id") UUID filename) {
+        viewingService.addViewing(userId, header, filename);
 
         return ResponseEntity.ok().build();
     }

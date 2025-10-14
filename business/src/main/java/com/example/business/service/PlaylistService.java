@@ -38,7 +38,7 @@ public class PlaylistService {
 
         validator.validatePlaylistCreator(playlist,userId);
 
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         playlist.getVideos().add(video);
         video.setPlaylist(playlist);

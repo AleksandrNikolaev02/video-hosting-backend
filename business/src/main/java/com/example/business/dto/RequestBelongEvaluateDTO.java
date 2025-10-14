@@ -1,14 +1,10 @@
 package com.example.business.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class RequestBelongEvaluateDTO {
-    private Long videoId;
+import java.util.UUID;
+
+public record RequestBelongEvaluateDTO(
+        @NotNull UUID filename
+) {
 }

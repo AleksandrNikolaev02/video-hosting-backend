@@ -100,10 +100,8 @@ public class FileService {
 
         if (file.isEmpty()) {
             VideoEntity videoEntity = new VideoEntity();
-            String filename = UUID.randomUUID().toString();
 
             videoEntity.setUserId(userId);
-            videoEntity.setFilename(filename);
             videoEntity.setContentType(dto.contentType());
             videoEntity.setKey(dto.key());
             videoEntity.setLength(0L);
@@ -201,21 +199,19 @@ public class FileService {
 
     @SneakyThrows
     public SavePreviewResponseDTO savePreview(Long userId, MultipartFile file, SavePreviewDTO dto) {
-        String filename = UUID.randomUUID().toString();
+        PreviewEntity preview = previewEntityRepository.save(createPreviewEntity(file.getSize(), userId,
+                file.getContentType(), dto.originalFilename()));
 
         PutObjectArgs args = PutObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
-                .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), filename))
+                .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), preview.getFilename()))
                 .stream(new ByteArrayInputStream(file.getBytes()), file.getSize(), -1)
                 .contentType(file.getContentType())
                 .build();
 
         saveFileInMinio(args);
 
-        previewEntityRepository.save(createPreviewEntity(filename, file.getSize(),
-                                     userId, file.getContentType(), dto.originalFilename()));
-
-        return new SavePreviewResponseDTO(file.getContentType(), filename);
+        return new SavePreviewResponseDTO(file.getContentType(), preview.getFilename());
     }
 
     public GetPreviewDTO getPreview(RequestGetPreviewDTO dto) {
@@ -259,7 +255,7 @@ public class FileService {
         previewEntityRepository.save(preview);
     }
 
-    private PutObjectArgs createPutObjectArgsFromFile(MultipartFile file, Long userId, String filename) {
+    private PutObjectArgs createPutObjectArgsFromFile(MultipartFile file, Long userId, UUID filename) {
         try {
             return PutObjectArgs.builder()
                     .bucket(fileConfig.getBucket())
@@ -272,14 +268,13 @@ public class FileService {
         }
     }
 
-    private PreviewEntity createPreviewEntity(String filename, Long length,
-                                              Long userId, String contentType, String originalFilename) {
+    private PreviewEntity createPreviewEntity(Long length, Long userId,
+                                              String contentType, String originalFilename) {
         PreviewEntity preview = new PreviewEntity();
 
         preview.setLength(length);
         preview.setUserId(userId);
         preview.setContentType(contentType);
-        preview.setFilename(filename);
         preview.setOriginalFilename(originalFilename);
 
         return preview;
@@ -336,7 +331,7 @@ public class FileService {
     }
 
     @SneakyThrows
-    public ChunkFileDTO getChunkFile(String filename, long userId, String rangeHeader) {
+    public ChunkFileDTO getChunkFile(UUID filename, long userId, String rangeHeader) {
         final long chunkSize = fileConfig.getChunkSize();
         final long fileLength = getFileSize(filename);
 
@@ -372,12 +367,12 @@ public class FileService {
                                 getContentTypeByFilename(filename), start, end, fileLength);
     }
 
-    private String getContentTypeByFilename(String filename) {
-        String contentType = redisTemplate.opsForValue().get(filename);
+    private String getContentTypeByFilename(UUID filename) {
+        String contentType = redisTemplate.opsForValue().get(filename.toString());
 
         if (contentType == null) {
             contentType = videoEntityRepository.getContentTypeByFilename(filename);
-            redisTemplate.opsForValue().set(filename, contentType);
+            redisTemplate.opsForValue().set(filename.toString(), contentType);
         }
 
         return contentType;
@@ -459,12 +454,12 @@ public class FileService {
                 .build();
     }
 
-    private long getFileSize(String filename) {
+    private long getFileSize(UUID filename) {
         return videoEntityRepository.getFileSize(filename);
     }
 
-    private PreviewEntity getPreviewByFilename(String filename) {
-        return previewEntityRepository.findByFilename(filename).orElseThrow(
+    private PreviewEntity getPreviewByFilename(UUID filename) {
+        return previewEntityRepository.findById(filename).orElseThrow(
                 () -> new PreviewNotFoundByFilename(String.format("File not found by filename: %s", filename))
         );
     }

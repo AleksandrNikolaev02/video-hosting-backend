@@ -39,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -165,7 +166,7 @@ public class FileController {
     })
     @GetMapping(value = "/file_chunk")
     public ResponseEntity<byte[]> getFileChunk(@RequestParam("user_id") Long userId,
-                                               @RequestParam("filename") String filename,
+                                               @RequestParam("filename") UUID filename,
                                                @RequestHeader(value = "Range", required = false) String rangeHeader) {
         ChunkFileDTO chunk = fileService.getChunkFile(filename, userId, rangeHeader);
 

@@ -36,6 +36,6 @@ public class Viewing {
     @Column(name = "user_id")
     private Long userId;
     @ManyToOne
-    @JoinColumn(name = "video_id")
+    @JoinColumn(name = "video_id", referencedColumnName = "filename")
     private Video video;
 }
