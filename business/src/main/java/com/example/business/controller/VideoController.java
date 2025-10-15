@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -150,9 +151,15 @@ public class VideoController {
     public List<ElasticVideo> searchVideo(@RequestParam(name = "query") String query) {
         return searchService.searchVideo(query)
                 .stream()
-                .peek(video -> video.setNames(Arrays.stream(video.getNames()
-                                                                             .get(0)
-                                                                             .split(", "))
-                                                                        .toList())).toList();
+                .peek(video -> {
+                    if (video.getNames() == null) {
+                        video.setNames(Collections.emptyList());
+                    } else {
+                        video.setNames(Arrays.stream(video.getNames()
+                                        .get(0)
+                                        .split(", "))
+                                .toList());
+                    }
+                }).toList();
     }
 }
