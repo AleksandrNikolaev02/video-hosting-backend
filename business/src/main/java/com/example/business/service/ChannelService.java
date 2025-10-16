@@ -1,0 +1,161 @@
+package com.example.business.service;
+
+import com.example.business.dto.BlockedChannelDTO;
+import com.example.business.dto.ChangeOwnerDTO;
+import com.example.business.dto.CreateChannelDTO;
+import com.example.business.dto.SendRequestDTO;
+import com.example.business.dto.UpdateChannelDTO;
+import com.example.business.exception.ChannelAlreadyExistsException;
+import com.example.business.factory.BlockedChannelFactory;
+import com.example.business.factory.ChannelFactory;
+import com.example.business.factory.RequestChannelFactory;
+import com.example.business.model.BlockedChannel;
+import com.example.business.model.Channel;
+import com.example.business.model.RequestChannel;
+import com.example.business.model.User;
+import com.example.business.repository.BlockedChannelRepository;
+import com.example.business.repository.ChannelRepository;
+import com.example.business.repository.RequestChannelRepository;
+import com.example.business.validator.BlockedChannelValidator;
+import com.example.business.validator.PermissionValidator;
+import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class ChannelService {
+    private final ChannelRepository channelRepository;
+    private final FindEntityService findEntityService;
+    private final PermissionValidator permissionValidator;
+    private final RequestChannelRepository requestChannelRepository;
+    private final BlockedChannelRepository blockedChannelRepository;
+    private final BlockedChannelValidator blockedChannelValidator;
+
+    public void createChannel(CreateChannelDTO dto, Long userId) {
+        User authorChannel = findEntityService.getUserById(userId);
+
+        validateChannelAlreadyExists(authorChannel.getChannel());
+
+        Channel channel = ChannelFactory.create(authorChannel, dto);
+
+        channelRepository.save(channel);
+    }
+
+    public void updateDataChannel(UpdateChannelDTO dto, Long userId) {
+        User author = findEntityService.getUserById(userId);
+
+        Channel channel = channelRepository.findByAuthor(author)
+                .orElseThrow(() -> new NoRightsException("You are not creator channel!"));
+
+        blockedChannelValidator.validate(channel);
+        permissionValidator.validateChannelCreator(channel, userId);
+
+        Optional.ofNullable(dto.description()).ifPresent(channel::setDescription);
+        Optional.ofNullable(dto.name()).ifPresent(channel::setName);
+
+        channelRepository.save(channel);
+    }
+
+    @Transactional
+    public void deleteChannel(Long userId) {
+        User author = findEntityService.getUserById(userId);
+
+        Channel channel = channelRepository.findByAuthor(author)
+                .orElseThrow(() -> new NoRightsException("You are not creator channel!"));
+
+        blockedChannelValidator.validate(channel);
+
+        channelRepository.delete(channel);
+    }
+
+    @Transactional
+    public void dropChannel(Long channelId) {
+        Channel channel = findEntityService.getChannelById(channelId);
+
+        channelRepository.delete(channel);
+    }
+
+    @Transactional
+    public void changeOwnerChannel(ChangeOwnerDTO dto) {
+        Channel channel = findEntityService.getChannelById(dto.channelId());
+        User newOwner = findEntityService.getUserById(dto.newOwnerId());
+
+        channel.setAuthor(newOwner);
+    }
+
+    public void sendRequest(SendRequestDTO dto, Long userId) {
+        User user = findEntityService.getUserById(userId);
+
+        RequestChannel requestChannel = RequestChannelFactory.create(user, dto.status());
+
+        requestChannelRepository.save(requestChannel);
+    }
+
+    @Transactional
+    public void removeRequest(Long userId, Long requestId) {
+        RequestChannel requestChannel = findEntityService.getRequestChannelById(requestId);
+
+        permissionValidator.validateRequestChannelCreator(requestChannel, userId);
+
+        requestChannelRepository.delete(requestChannel);
+    }
+
+    public List<RequestChannel> getUserRequests(Long userId) {
+        User user = findEntityService.getUserById(userId);
+
+        return user.getRequests();
+    }
+
+    public Page<RequestChannel> getAllRequests(Pageable pageable) {
+        return requestChannelRepository.findAll(pageable);
+    }
+
+    public void blockVideo(BlockedChannelDTO dto) {
+        Channel channel = findEntityService.getChannelById(dto.channelId());
+
+        BlockedChannel blockedChannel = BlockedChannelFactory.create(dto, channel);
+
+        blockedChannelRepository.save(blockedChannel);
+    }
+
+    public Page<BlockedChannel> getAllBlockedChannels(Pageable pageable) {
+        return blockedChannelRepository.findAll(pageable);
+    }
+
+    @Transactional
+    public void unblockChannel(Long channelId) {
+        BlockedChannel blockedChannel = findEntityService.getBlockedChannelById(channelId);
+
+        blockedChannelRepository.delete(blockedChannel);
+    }
+
+    @Async
+    @Transactional
+    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    public void unblockExpiresChannels() {
+        log.info("Search expired blocked channels...");
+
+        List<BlockedChannel> channels = blockedChannelRepository.findAllExpiredChannels(LocalDateTime.now());
+
+        blockedChannelRepository.deleteAll(channels);
+    }
+
+    private void validateChannelAlreadyExists(Channel channel) {
+        if (channel != null) {
+            throw new ChannelAlreadyExistsException("You already have a channel!");
+        }
+    }
+}

@@ -9,15 +9,20 @@ import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.enums.VideoStatus;
+import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.exception.UserNotFoundException;
 import com.example.business.exception.VideoNotFoundException;
 import com.example.business.factory.ReactionFactory;
+import com.example.business.factory.VideoFactory;
+import com.example.business.model.Channel;
 import com.example.business.model.Dislike;
 import com.example.business.model.Like;
 import com.example.business.model.User;
 import com.example.business.model.Video;
+import com.example.business.repository.ChannelRepository;
 import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
+import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,6 +41,8 @@ public class VideoService {
     private final UserRepository userRepository;
     private final FindEntityService findEntityService;
     private final PermissionValidator permissionValidator;
+    private final ChannelRepository channelRepository;
+    private final BlockedChannelValidator blockedChannelValidator;
 
 //    @KafkaListener(topics = "${topics.create-video}",
 //                   groupId = "${kafka.group-id}",
@@ -54,6 +61,7 @@ public class VideoService {
     public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
         Video video = findEntityService.getVideoById(filename);
 
+        blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         Optional.ofNullable(dto.description()).ifPresent(video::setDescription);
@@ -63,12 +71,14 @@ public class VideoService {
     public Video createVideo(CreateBaseVideoDTO dto, Long userId) {
         User creator = getUserById(userId);
 
-        Video video = new Video();
-        video.setFilename(dto.filename());
-        video.setDescription(dto.description());
-        video.setName(dto.title());
-        video.setCreator(creator);
-        video.setVideoStatus(VideoStatus.DRAFT);
+        blockedChannelValidator.validate(creator.getChannel());
+
+        Optional<Channel> channel = channelRepository.findByAuthor(creator);
+        if (channel.isEmpty()) {
+            throw new UserNotCreateChannelException("User does not create channel yet!");
+        }
+
+        Video video = VideoFactory.create(dto, creator);
 
         videoRepository.save(video);
 
@@ -79,6 +89,7 @@ public class VideoService {
     public void deleteVideo(DeleteVideoDTO dto, Long userId) {
         Video video = findEntityService.getVideoById(dto.filename());
 
+        blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         videoRepository.delete(video);
@@ -87,6 +98,7 @@ public class VideoService {
     public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {
         Video video = findEntityService.getVideoById(dto.filename());
 
+        blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         // FIXME: а вот тут надо подумать...
@@ -98,6 +110,7 @@ public class VideoService {
     public void postVideo(UUID filename, Long userId) {
         Video video = getVideoByPath(filename);
 
+        blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         video.setVideoStatus(VideoStatus.UPLOADED);

@@ -1,6 +1,11 @@
 package com.example.business.controller;
 
+import com.example.business.exception.ChannelAlreadyExistsException;
+import com.example.business.exception.ChannelBlockedException;
+import com.example.business.exception.ChannelNotFoundException;
 import com.example.business.exception.PlaylistNotFoundException;
+import com.example.business.exception.RequestNotFoundException;
+import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.exception.UserNotFoundException;
 import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
@@ -69,5 +74,35 @@ public class CustomControllerAdvice {
     public ResponseEntity<String> handle(PlaylistNotFoundException exception) {
         log.error(exception.getMessage());
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = ChannelAlreadyExistsException.class)
+    public ResponseEntity<String> handle(ChannelAlreadyExistsException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(value = UserNotCreateChannelException.class)
+    public ResponseEntity<String> handle(UserNotCreateChannelException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = ChannelNotFoundException.class)
+    public ResponseEntity<String> handle(ChannelNotFoundException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = RequestNotFoundException.class)
+    public ResponseEntity<String> handle(RequestNotFoundException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = ChannelBlockedException.class)
+    public ResponseEntity<String> handle(ChannelBlockedException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.CONFLICT);
     }
 }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="add-channel_id-on-tables" author="alex">
+        <addColumn tableName="videos">
+            <column name="channel_id" type="java.lang.Long"/>
+        </addColumn>
+
+        <addColumn tableName="playlists">
+            <column name="channel_id" type="java.lang.Long"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="videos" columnName="channel_id"/>
+            <dropColumn tableName="playlists" columnName="channel_id"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

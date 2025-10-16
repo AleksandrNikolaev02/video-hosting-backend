@@ -28,4 +28,12 @@
     <include file="db/changelog/changes/change-type-all-table-link-videos-2025-10-14.xml"/>
     <include file="db/changelog/changes/add-all-foreign-keys-tables-2025-10-14.xml"/>
     <include file="db/changelog/changes/add-unique-constraint-to-viewing-table-2025-10-14.xml"/>
+    <include file="db/changelog/changes/create-channels-sequence-2025-10-15.xml"/>
+    <include file="db/changelog/changes/create-channels-table-2025-10-15.xml"/>
+    <include file="db/changelog/changes/add-channel_id-on-tables-2025-10-16.xml"/>
+    <include file="db/changelog/changes/add-foreign-keys-for-table-video-playlist.xml"/>
+    <include file="db/changelog/changes/create-requests_channels-table-2025-10-15.xml"/>
+    <include file="db/changelog/changes/create-requests_channels-sequence-2025-10-15.xml"/>
+    <include file="db/changelog/changes/create-blocked_channels-table-2025-10-16.xml"/>
+    <include file="db/changelog/changes/change-column-type-blocked_channels-2025-10-16.xml"/>
 </databaseChangeLog>

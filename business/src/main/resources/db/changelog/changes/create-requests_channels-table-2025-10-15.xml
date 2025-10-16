@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create-requests_channels_table" author="alex">
+        <createTable tableName="requests_channels">
+            <column name="id" type="java.lang.Long">
+                <constraints primaryKey="true" unique="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="date"/>
+            <column name="status" type="varchar"/>
+            <column name="creator_id" type="java.lang.Long"/>
+            <column name="channel_id" type="java.lang.Long"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="requests_channels" baseColumnNames="creator_id"
+                                 constraintName="fk_requests_channels_users"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="requests_channels" baseColumnNames="channel_id"
+                                 constraintName="fk_requests_channels_channels"
+                                 referencedTableName="channels"
+                                 referencedColumnNames="id"/>
+
+        <rollback>
+            <dropTable tableName="requests_channels"/>
+            <dropForeignKeyConstraint baseTableName="requests_channels" constraintName="fk_requests_channels_users"/>
+            <dropForeignKeyConstraint baseTableName="requests_channels" constraintName="fk_requests_channels_channels"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

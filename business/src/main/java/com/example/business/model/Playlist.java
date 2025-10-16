@@ -43,4 +43,7 @@ public class Playlist {
     @OneToMany(mappedBy = "playlist", cascade = {CascadeType.DETACH, CascadeType.MERGE,
                                                  CascadeType.PERSIST, CascadeType.REFRESH})
     private Collection<Video> videos = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "channel_id", referencedColumnName = "id")
+    private Channel channel;
 }

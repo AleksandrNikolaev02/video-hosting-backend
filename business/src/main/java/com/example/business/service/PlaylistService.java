@@ -9,6 +9,7 @@ import com.example.business.model.User;
 import com.example.business.model.Video;
 import com.example.business.repository.PlaylistRepository;
 import com.example.business.repository.VideoRepository;
+import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -24,9 +25,12 @@ public class PlaylistService {
     private final FindEntityService findEntityService;
     private final PermissionValidator validator;
     private final VideoRepository videoRepository;
+    private final BlockedChannelValidator blockedChannelValidator;
 
     public void createPlaylist(CreatePlaylistDTO dto, Long userId) {
         User user = findEntityService.getUserById(userId);
+
+        blockedChannelValidator.validate(user.getChannel());
 
         Playlist playlist = PlaylistFactory.create(user, dto.name());
 
@@ -36,6 +40,7 @@ public class PlaylistService {
     public void addVideoInPlaylist(AddVideoInPlaylistDTO dto, Long userId) {
         Playlist playlist = findEntityService.getPlaylistById(dto.playlistId());
 
+        blockedChannelValidator.validate(playlist.getChannel());
         validator.validatePlaylistCreator(playlist,userId);
 
         Video video = findEntityService.getVideoById(dto.filename());
@@ -64,6 +69,7 @@ public class PlaylistService {
     public void deletePlaylist(Long userId, DeletePlaylistDTO dto) {
         Playlist playlist = findEntityService.getPlaylistById(dto.playlistId());
 
+        blockedChannelValidator.validate(playlist.getChannel());
         validator.validatePlaylistCreator(playlist, userId);
 
         deleteLinkFromVideosOfPlaylist(playlist);

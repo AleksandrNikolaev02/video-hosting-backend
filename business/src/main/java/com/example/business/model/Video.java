@@ -15,6 +15,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,6 +31,7 @@ import java.util.UUID;
 @Table(name = "videos")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Video {
@@ -67,4 +69,7 @@ public class Video {
     private Set<Tag> tags = new HashSet<>();
     @OneToMany(mappedBy = "video", cascade = CascadeType.ALL, orphanRemoval = true)
     private Collection<Viewing> viewings = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "channel_id", referencedColumnName = "id")
+    private Channel channel;
 }
