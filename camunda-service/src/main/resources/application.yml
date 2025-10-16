@@ -1,0 +1,13 @@
+server:
+  port: 9201
+
+spring:
+  application:
+    name: camunda-service
+
+camunda:
+  bpm:
+    deployment-resource-pattern: classpath*:/processes/*.bpmn
+    admin-user:
+      id: camunda
+      password: admin

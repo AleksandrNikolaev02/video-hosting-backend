@@ -19,6 +19,7 @@
 		<module>api-gateway</module>
 		<module>auth-service</module>
 		<module>business</module>
+		<module>camunda-service</module>
 	</modules>
 
 	<properties>
