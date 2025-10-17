@@ -5,6 +5,17 @@ spring:
   application:
     name: camunda-service
 
+tasks:
+  instance-key: test_bpmn
+  business-key: process
+
+kafka:
+  bootstrap-server: localhost:9092
+  group-id: file-service-group
+
+topics:
+  publish-event-topic: publish-event
+
 camunda:
   bpm:
     deployment-resource-pattern: classpath*:/processes/*.bpmn
