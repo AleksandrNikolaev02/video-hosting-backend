@@ -2,13 +2,15 @@ package com.example.camunda.service;
 
 import com.example.camunda.config.CamundaConfig;
 import com.example.camunda.dto.ExecutePipelineDTO;
-import com.example.camunda.dto.PostMessageDTO;
+import com.example.dto.PostMessageDTO;
 import com.example.camunda.exceptions.ExecutePipelineException;
 import com.example.camunda.util.IdGenerator;
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.engine.RuntimeService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -17,13 +19,13 @@ public class CamundaService {
     private final CamundaConfig config;
     private final IdGenerator generator;
 
-    public ExecutePipelineDTO startDeleteChannelPipeline() {
+    public ExecutePipelineDTO startDeleteChannelPipeline(Map<String, Object> params) {
         try {
             String pipelineKey = String.format("%s_%s", config.getBusinessKey(),
                                                         generator.generate());
 
             camunda.startProcessInstanceByKey(config.getInstanceKey(),
-                    pipelineKey);
+                    pipelineKey, params);
 
             return new ExecutePipelineDTO(pipelineKey);
         } catch (Exception e) {

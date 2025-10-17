@@ -16,6 +16,10 @@ kafka:
 topics:
   publish-event-topic: publish-event
 
+params:
+  user-id: X-user-id
+  user-role: X-user-role
+
 camunda:
   bpm:
     deployment-resource-pattern: classpath*:/processes/*.bpmn
