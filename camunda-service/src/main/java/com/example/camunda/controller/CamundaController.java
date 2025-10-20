@@ -30,6 +30,8 @@ public class CamundaController {
 
     private Map<String, Object> createParams(Long userId, String role) {
         return Map.of(parametersConfig.getUserId(), userId,
-                      parametersConfig.getUserRole(), role);
+                      parametersConfig.getUserRole(), role,
+                      parametersConfig.getCountSuccessRequestName(), parametersConfig.getCountSuccessRequest(),
+                      parametersConfig.getSuccessDeleteData(), false);
     }
 }

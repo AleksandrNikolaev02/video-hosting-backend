@@ -1,13 +1,17 @@
 package com.example.business.service;
 
+import com.example.business.config.TopicConfig;
 import com.example.business.dto.BlockedChannelDTO;
 import com.example.business.dto.ChangeOwnerDTO;
 import com.example.business.dto.CreateChannelDTO;
+import com.example.business.dto.KafkaDeleteChannelDTO;
 import com.example.business.dto.SendRequestDTO;
 import com.example.business.dto.UpdateChannelDTO;
+import com.example.business.enums.ChannelStatus;
 import com.example.business.exception.ChannelAlreadyExistsException;
 import com.example.business.factory.BlockedChannelFactory;
 import com.example.business.factory.ChannelFactory;
+import com.example.business.factory.PostMessageFactory;
 import com.example.business.factory.RequestChannelFactory;
 import com.example.business.model.BlockedChannel;
 import com.example.business.model.Channel;
@@ -18,15 +22,20 @@ import com.example.business.repository.ChannelRepository;
 import com.example.business.repository.RequestChannelRepository;
 import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
+import com.example.dto.PostMessageDTO;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.TopicPartition;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +52,8 @@ public class ChannelService {
     private final RequestChannelRepository requestChannelRepository;
     private final BlockedChannelRepository blockedChannelRepository;
     private final BlockedChannelValidator blockedChannelValidator;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final TopicConfig topicConfig;
 
     public void createChannel(CreateChannelDTO dto, Long userId) {
         User authorChannel = findEntityService.getUserById(userId);
@@ -70,15 +81,30 @@ public class ChannelService {
     }
 
     @Transactional
-    public void deleteChannel(Long userId) {
-        User author = findEntityService.getUserById(userId);
+    public void deleteChannel(Long userId, String pipelineKey) {
+        try {
+            User author = findEntityService.getUserById(userId);
 
-        Channel channel = channelRepository.findByAuthor(author)
-                .orElseThrow(() -> new NoRightsException("You are not creator channel!"));
+            Channel channel = channelRepository.findByAuthor(author)
+                    .orElseThrow(() -> new NoRightsException("You are not creator channel!"));
 
-        blockedChannelValidator.validate(channel);
+            blockedChannelValidator.validate(channel);
 
-        channelRepository.delete(channel);
+            channel.setStatus(ChannelStatus.DELETED);
+
+            KafkaDeleteChannelDTO dto = new KafkaDeleteChannelDTO(channel.getId(), pipelineKey);
+
+            kafkaTemplate.send(topicConfig.getDeleteDataChannel(), 0, "", dto); // событие на удаление видео
+            kafkaTemplate.send(topicConfig.getDeleteDataChannel(), 1, "", dto); // событие на удаление плейлистов
+        } catch (Exception exception) {
+            log.error("Ошибка при удалении канана пользователя с id: {}", userId);
+
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+
+            PostMessageDTO dto = PostMessageFactory.createFailureDto(pipelineKey);
+
+            kafkaTemplate.send(topicConfig.getPublishEventTopic(), dto);
+        }
     }
 
     @Transactional
@@ -151,6 +177,20 @@ public class ChannelService {
         List<BlockedChannel> channels = blockedChannelRepository.findAllExpiredChannels(LocalDateTime.now());
 
         blockedChannelRepository.deleteAll(channels);
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+                   topicPartitions = @TopicPartition(
+                           topic = "${topics.compensating-transaction}",
+                           partitions = "0"
+                   )
+    )
+    public void handleCompensatingTransaction(String str) {
+        log.info("Получен запрос на запуск компенсирующий транзакции удаления канала...");
+
+        Long userId = Long.parseLong(str);
+
+        User user = findEntityService.getUserById(userId);
     }
 
     private void validateChannelAlreadyExists(Channel channel) {

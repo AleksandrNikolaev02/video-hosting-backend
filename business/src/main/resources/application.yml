@@ -5,7 +5,7 @@ spring:
   application:
     name: business
   datasource:
-    url: jdbc:postgresql://172.23.6.13:5432/business
+    url: jdbc:postgresql://localhost:5432/business
     username: postgres
     password: 1234
     driver-class-name: org.postgresql.Driver
@@ -35,6 +35,10 @@ kafka:
   group-id: file-service-group
   bootstrap-server: localhost:9092
 
+elasticsearch:
+  host: localhost
+  port: 9200
+
 topics:
   delete-file-request: delete-file-request
   get-file-request: get-file-request
@@ -44,6 +48,9 @@ topics:
   file-responses: file-responses
   create-user: create-user-in-db
   create-video: create-video-in-db
+  compensating-transaction-business-service: compensating-transaction-business-service
+  delete-data-channel: delete-data-channel
+  publish-event-topic: publish-event
 
 metrics:
   error-minio-service-metric: error_minio_service_metric

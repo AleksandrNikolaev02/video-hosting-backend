@@ -1,5 +1,6 @@
 package com.example.business.factory;
 
+import com.example.business.enums.PlaylistStatus;
 import com.example.business.model.Playlist;
 import com.example.business.model.User;
 
@@ -10,6 +11,7 @@ public class PlaylistFactory {
         return Playlist.builder()
                 .name(name)
                 .owner(owner)
+                .status(PlaylistStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .build();
     }

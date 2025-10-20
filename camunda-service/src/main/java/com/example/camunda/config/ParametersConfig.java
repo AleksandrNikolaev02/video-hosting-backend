@@ -12,4 +12,8 @@ import org.springframework.context.annotation.Configuration;
 public class ParametersConfig {
     private String userRole;
     private String userId;
+    private String namePipelineKey;
+    private Integer countSuccessRequest;
+    private String countSuccessRequestName;
+    private String successDeleteData;
 }

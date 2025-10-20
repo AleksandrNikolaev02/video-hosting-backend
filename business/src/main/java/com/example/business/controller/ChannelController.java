@@ -67,8 +67,9 @@ public class ChannelController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Данные канала обновлены!")
     })
-    public ResponseEntity<Void> deleteChannel(@RequestHeader("X-user-id") Long userId) {
-        channelService.deleteChannel(userId);
+    public ResponseEntity<Void> deleteChannel(@RequestHeader("X-user-id") Long userId,
+                                              @RequestHeader("X-pipeline-key") String pipelineKey) {
+        channelService.deleteChannel(userId, pipelineKey);
 
         return ResponseEntity.status(204).build();
     }

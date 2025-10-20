@@ -27,7 +27,7 @@ public class KafkaConfig {
     private String groupId;
 
     @Bean
-    public ProducerFactory<String, String> producerFactory() {
+    public ProducerFactory<String, Object> producerFactory() {
         return new DefaultKafkaProducerFactory<>(getProducerConfig());
     }
 
@@ -37,7 +37,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, String> kafkaTemplate() {
+    public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 
@@ -53,9 +53,9 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConsumerFactory<String, String> consumerFactoryString() {
+    public ConsumerFactory<String, Object> consumerFactoryString() {
         return new DefaultKafkaConsumerFactory<>(getConsumerConfig(), new StringDeserializer(),
-                new StringDeserializer());
+                new JsonDeserializer<>());
     }
 
     @Bean
@@ -67,8 +67,8 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> concurrentKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+    public ConcurrentKafkaListenerContainerFactory<String, Object> concurrentKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactoryString());
         return factory;

@@ -1,13 +1,17 @@
 package com.example.business.service;
 
+import com.example.business.config.TopicConfig;
 import com.example.business.dto.BelongEvaluateDTO;
 import com.example.business.dto.CreateBaseVideoDTO;
 import com.example.business.dto.DeleteVideoDTO;
 import com.example.business.dto.EvaluateVideoDTO;
 import com.example.business.dto.GetEvaluatesVideoDTO;
+import com.example.business.dto.KafkaDeleteChannelDTO;
 import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
+import com.example.business.enums.ChannelStatus;
+import com.example.business.enums.PlaylistStatus;
 import com.example.business.enums.VideoStatus;
 import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.exception.UserNotFoundException;
@@ -24,25 +28,37 @@ import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
+import com.example.dto.PostMessageDTO;
+import com.example.dto.StatusProcessChannel;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.TopicPartition;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class VideoService {
+
+    private final TopicConfig topicConfig;
+
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
     private final FindEntityService findEntityService;
     private final PermissionValidator permissionValidator;
     private final ChannelRepository channelRepository;
     private final BlockedChannelValidator blockedChannelValidator;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
 //    @KafkaListener(topics = "${topics.create-video}",
 //                   groupId = "${kafka.group-id}",
@@ -93,6 +109,46 @@ public class VideoService {
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         videoRepository.delete(video);
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+                   topicPartitions = @TopicPartition(
+                        topic = "${topics.delete-data-channel}",
+                        partitions = "0"
+                   )
+    )
+    @Transactional
+    public void handleDeleteDataChannel(Object object) {
+        StatusProcessChannel status = StatusProcessChannel.DATA_SUCCESS;
+        KafkaDeleteChannelDTO dto = (KafkaDeleteChannelDTO) object;
+        try {
+            Channel channel = findEntityService.getChannelById(dto.channelId());
+            channel.getVideos().forEach(video -> video.setVideoStatus(VideoStatus.DELETED));
+        } catch (Exception e) {
+            status = StatusProcessChannel.DATA_FAILURE;
+
+            log.error("Ошибка при удалении видео с канала с id: {}", dto.channelId());
+
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        } finally {
+            PostMessageDTO message = new PostMessageDTO(status, dto.pipelineKey());
+            kafkaTemplate.send(topicConfig.getPublishEventTopic(), message);
+        }
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+            topicPartitions = @TopicPartition(
+                    topic = "${topics.compensating-transaction-business-service}",
+                    partitions = "0"
+            )
+    )
+    public void compensatingTransactional(Object object) {
+        Long userId = (Long) object;
+
+        Channel channel = findEntityService.getUserById(userId).getChannel();
+        channel.setStatus(ChannelStatus.ACTIVE);
+
+        channel.getVideos().forEach(video -> video.setVideoStatus(VideoStatus.UPLOADED));
     }
 
     public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {

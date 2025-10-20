@@ -1,8 +1,11 @@
 package com.example.business.model;
 
+import com.example.business.enums.ChannelStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -16,6 +19,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,12 +47,17 @@ public class Channel {
     @OneToOne
     @JoinColumn(name = "author_id")
     private User author;
+    @Fetch(value = FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
     private Collection<Video> videos = new ArrayList<>();
+    @Fetch(value = FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
     private Collection<Playlist> playlists = new ArrayList<>();
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     @Column(name = "count_subs")
     private Integer countSubs;
+    @Column(name = "status")
+    @Enumerated(value = EnumType.STRING)
+    private ChannelStatus status;
 }

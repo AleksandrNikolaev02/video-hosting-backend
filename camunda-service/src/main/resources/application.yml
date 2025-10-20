@@ -15,10 +15,16 @@ kafka:
 
 topics:
   publish-event-topic: publish-event
+  compensating-transaction-business-service: compensating-transaction-business-service
+  compensating-transaction-file-service: compensating-transaction-file-service
 
 params:
   user-id: X-user-id
   user-role: X-user-role
+  name-pipeline-key: pipeline-key
+  success-delete-data: success-delete-data
+  count-success-request-name: count-success-request
+  count-success-request: 2
 
 camunda:
   bpm:

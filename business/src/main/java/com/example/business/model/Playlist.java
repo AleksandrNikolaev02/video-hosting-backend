@@ -1,8 +1,11 @@
 package com.example.business.model;
 
+import com.example.business.enums.PlaylistStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,6 +26,7 @@ import java.util.Collection;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -46,4 +51,7 @@ public class Playlist {
     @ManyToOne
     @JoinColumn(name = "channel_id", referencedColumnName = "id")
     private Channel channel;
+    @Column(name = "status")
+    @Enumerated(value = EnumType.STRING)
+    private PlaylistStatus status;
 }
