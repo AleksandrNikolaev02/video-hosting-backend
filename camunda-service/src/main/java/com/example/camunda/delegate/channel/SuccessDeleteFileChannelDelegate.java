@@ -6,10 +6,10 @@ import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component("successDeleteDataChannelDelegate")
-public class SuccessDeleteDataChannelDelegate implements JavaDelegate {
+@Component("successDeleteFileChannelDelegate")
+public class SuccessDeleteFileChannelDelegate implements JavaDelegate {
     @Override
     public void execute(DelegateExecution delegateExecution) {
-        log.info("Данные с бизнес-микросервиса успешно удалены!");
+        log.info("Данные с микросервиса файлов были успешно удалены!");
     }
 }

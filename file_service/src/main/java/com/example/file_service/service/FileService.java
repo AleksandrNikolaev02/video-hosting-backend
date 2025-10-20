@@ -5,7 +5,9 @@ import com.example.dto.Event;
 import com.example.dto.FileDataDTO;
 import com.example.dto.FileEventDTO;
 import com.example.dto.FileResponseDTO;
+import com.example.dto.PostMessageDTO;
 import com.example.dto.Status;
+import com.example.dto.StatusProcessChannel;
 import com.example.dto.VideoLoadDTO;
 import com.example.file_service.config.FileConfig;
 import com.example.file_service.config.TopicConfig;
@@ -18,6 +20,7 @@ import com.example.file_service.dto.SaveChunksDTO;
 import com.example.file_service.dto.SavePreviewDTO;
 import com.example.file_service.dto.SavePreviewResponseDTO;
 import com.example.file_service.dto.UpdatePreviewDTO;
+import com.example.file_service.enums.FileStatus;
 import com.example.file_service.exception.FileNotFoundByKeyException;
 import com.example.file_service.exception.FileReadException;
 import com.example.file_service.exception.FileStorageException;
@@ -58,6 +61,7 @@ import org.springframework.http.HttpRange;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -76,7 +80,7 @@ public class FileService {
     private final FileConfig fileConfig;
     private final TopicConfig topicConfig;
     private final MinioClient minioClient;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final RedisTemplate<String, String> redisTemplate;
     private final KafkaTemplate<String, CreateVideoDTO> videoDTOKafkaTemplate;
     private final EventToTopicsStorage eventToTopicsStorage;
@@ -104,6 +108,7 @@ public class FileService {
             videoEntity.setUserId(userId);
             videoEntity.setContentType(dto.contentType());
             videoEntity.setKey(dto.key());
+            videoEntity.setStatus(FileStatus.CONFIRMED);
             videoEntity.setLength(0L);
             videoEntity.setOriginalFilename(originalFilename);
 
@@ -255,6 +260,26 @@ public class FileService {
         previewEntityRepository.save(preview);
     }
 
+    @Transactional
+    public void deleteChannel(Long userId, String pipelineKey) {
+        StatusProcessChannel status = StatusProcessChannel.FILE_SUCCESS;
+
+        try {
+            List<VideoEntity> videos = videoEntityRepository.findByUserId(userId);
+            videos.forEach(video -> video.setStatus(FileStatus.DELETED));
+
+            List<PreviewEntity> previews = previewEntityRepository.findByUserId(userId);
+            previews.forEach(preview -> preview.setStatus(FileStatus.DELETED));
+        } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+
+            status = StatusProcessChannel.FILE_FAILURE;
+        } finally {
+            PostMessageDTO dto = new PostMessageDTO(status, pipelineKey);
+            kafkaTemplate.send(topicConfig.getPublishEventTopic(), dto);
+        }
+    }
+
     private PutObjectArgs createPutObjectArgsFromFile(MultipartFile file, Long userId, UUID filename) {
         try {
             return PutObjectArgs.builder()
@@ -274,6 +299,7 @@ public class FileService {
 
         preview.setLength(length);
         preview.setUserId(userId);
+        preview.setStatus(FileStatus.CONFIRMED);
         preview.setContentType(contentType);
         preview.setOriginalFilename(originalFilename);
 

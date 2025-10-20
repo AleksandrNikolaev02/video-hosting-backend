@@ -8,5 +8,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @FeignClient(value = "deleteChannel", url = "http://localhost:8080")
 public interface BusinessService {
     @DeleteMapping(value = "/channel/delete")
-    ResponseEntity<Void> deleteBusinessDataChannel(@RequestHeader("X-user-id") Long userId);
+    ResponseEntity<Void> deleteBusinessDataChannel(@RequestHeader("X-user-id") Long userId,
+                                                   @RequestHeader("X-pipeline-key") String pipelineKey);
 }

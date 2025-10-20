@@ -15,4 +15,5 @@ public class TopicConfig {
     private String fileAnswers;
     private String createVideo;
     private String updatePath;
+    private String publishEventTopic;
 }

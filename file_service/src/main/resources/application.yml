@@ -60,6 +60,7 @@ topics:
   file-answers: file-answers
   file-responses: file-responses
   create-video: create-video-in-db
+  publish-event-topic: publish-event
 
 metrics:
   error-minio-service-metric: error_minio_service_metric

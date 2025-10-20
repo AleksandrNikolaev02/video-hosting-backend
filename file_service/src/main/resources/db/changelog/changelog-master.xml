@@ -15,4 +15,5 @@
     <include file="db/changelog/changes/change-files-table-2025-10-14.xml"/>
     <include file="db/changelog/changes/add-primary-key-to-files-table-2025-10-14.xml"/>
     <include file="db/changelog/changes/change-images-table-2025-10-14.xml"/>
+    <include file="db/changelog/changes/add-status-column-to-files-2025-10-20.xml"/>
 </databaseChangeLog>

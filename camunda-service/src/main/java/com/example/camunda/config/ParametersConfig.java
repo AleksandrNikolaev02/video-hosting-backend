@@ -16,4 +16,5 @@ public class ParametersConfig {
     private Integer countSuccessRequest;
     private String countSuccessRequestName;
     private String successDeleteData;
+    private String nameChannelId;
 }

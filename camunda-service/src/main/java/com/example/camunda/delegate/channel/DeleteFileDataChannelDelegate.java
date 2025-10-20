@@ -1,6 +1,6 @@
 package com.example.camunda.delegate.channel;
 
-import com.example.camunda.client.BusinessService;
+import com.example.camunda.client.FileService;
 import com.example.camunda.config.ParametersConfig;
 import com.example.camunda.config.TopicConfig;
 import com.example.dto.PostMessageDTO;
@@ -16,30 +16,28 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Slf4j
-@Component("deleteBusinessDataChannelDelegate")
 @AllArgsConstructor
-public class DeleteBusinessDataChannelDelegate implements JavaDelegate {
-    private final ParametersConfig config;
-    private final BusinessService businessService;
+@Component("deleteFileDataChannelDelegate")
+public class DeleteFileDataChannelDelegate implements JavaDelegate {
+    private final FileService fileService;
+    private final ParametersConfig parametersConfig;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final TopicConfig topicConfig;
 
     @Override
     public void execute(DelegateExecution delegateExecution) {
-        log.info("Начало выполнения делегата для удаления бизнес данных канала...");
+        log.info("Начала выполнения делегата для удаления файлов канала...");
 
         Map<String, Object> variables = delegateExecution.getVariables();
 
-        Long userId = (Long) variables.get(config.getUserId());
-        String pipelineKey = (String) variables.get(config.getNamePipelineKey());
-
-        ResponseEntity<Void> response = businessService.deleteBusinessDataChannel(userId, pipelineKey);
+        ResponseEntity<Void> response = fileService.deleteChannel((Long) variables.get(
+                parametersConfig.getNameChannelId()), (String) variables.get(parametersConfig.getNamePipelineKey())
+        );
 
         if (response.getStatusCode().isError()) {
-            log.error("Запрос на бизнес-сервис вернул статус 4xx или 5xx!");
-
-            PostMessageDTO dto = new PostMessageDTO(StatusProcessChannel.DATA_FAILURE,
-                                                    pipelineKey);
+            log.error("Запрос к микросервису вернул статус 4xx или 5xx");
+            String pipelineKey = (String) variables.get(parametersConfig.getNamePipelineKey());
+            PostMessageDTO dto = new PostMessageDTO(StatusProcessChannel.FILE_FAILURE, pipelineKey);
 
             kafkaTemplate.send(topicConfig.getPublishEventTopic(), dto);
         }

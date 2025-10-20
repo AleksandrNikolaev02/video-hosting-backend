@@ -22,6 +22,7 @@ params:
   user-id: X-user-id
   user-role: X-user-role
   name-pipeline-key: pipeline-key
+  name-channel-id: channel-id
   success-delete-data: success-delete-data
   count-success-request-name: count-success-request
   count-success-request: 2

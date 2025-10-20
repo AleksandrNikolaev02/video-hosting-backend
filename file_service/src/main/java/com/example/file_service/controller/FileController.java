@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -177,5 +178,13 @@ public class FileController {
                         chunk.end(), chunk.fileLength()))
                 .contentLength(chunk.end() - chunk.start() + 1)
                 .body(chunk.data());
+    }
+
+    @DeleteMapping("/channel/delete")
+    public ResponseEntity<Void> deleteChannel(@RequestHeader("X-user-id") Long userId,
+                                              @RequestHeader("X-pipeline-key") String pipelineKey) {
+        fileService.deleteChannel(userId, pipelineKey);
+
+        return ResponseEntity.ok().build();
     }
 }
