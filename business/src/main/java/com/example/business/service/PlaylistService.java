@@ -2,6 +2,7 @@ package com.example.business.service;
 
 import com.example.business.config.TopicConfig;
 import com.example.business.dto.AddVideoInPlaylistDTO;
+import com.example.business.dto.CompensatingTransactionDTO;
 import com.example.business.dto.CreatePlaylistDTO;
 import com.example.business.dto.DeletePlaylistDTO;
 import com.example.business.dto.KafkaDeleteChannelDTO;
@@ -96,15 +97,17 @@ public class PlaylistService {
             topicPartitions = @TopicPartition(
                     topic = "${topics.delete-data-channel}",
                     partitions = "1"
-            )
+            ),
+            containerFactory = "factoryKafkaDeleteChannelDTO"
     )
     @Transactional
-    public void handleDeleteDataChannel(Object object) {
+    public void handleDeleteDataChannel(KafkaDeleteChannelDTO dto) {
         StatusProcessChannel status = StatusProcessChannel.DATA_SUCCESS;
-        KafkaDeleteChannelDTO dto = (KafkaDeleteChannelDTO) object;
         try {
+            log.info("Начало выполнения смены статусов у плейлистов...");
             Channel channel = findEntityService.getChannelById(dto.channelId());
             channel.getPlaylists().forEach(playlist -> playlist.setStatus(PlaylistStatus.DELETED));
+            log.info("Смена статусов у плейлистов завершилась успешно!");
         } catch (Exception e) {
             status = StatusProcessChannel.DATA_FAILURE;
 
@@ -114,6 +117,7 @@ public class PlaylistService {
         } finally {
             PostMessageDTO message = new PostMessageDTO(status, dto.pipelineKey());
             kafkaTemplate.send(topicConfig.getPublishEventTopic(), message);
+            log.info("Отправлено сообщение в Camunda");
         }
     }
 
@@ -121,12 +125,11 @@ public class PlaylistService {
                    topicPartitions = @TopicPartition(
                            topic = "${topics.compensating-transaction-business-service}",
                            partitions = "1"
-                   )
+                   ),
+            containerFactory = "factoryCompensatingTransactionDTO"
     )
-    public void compensatingTransactional(Object object) {
-        Long userId = (Long) object;
-
-        Channel channel = findEntityService.getUserById(userId).getChannel();
+    public void compensatingTransactional(CompensatingTransactionDTO dto) {
+        Channel channel = findEntityService.getUserById(dto.userId()).getChannel();
         channel.setStatus(ChannelStatus.ACTIVE);
 
         channel.getPlaylists().forEach(playlist -> playlist.setStatus(PlaylistStatus.ACTIVE));

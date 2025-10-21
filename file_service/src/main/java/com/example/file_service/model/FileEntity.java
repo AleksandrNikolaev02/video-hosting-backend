@@ -2,6 +2,8 @@ package com.example.file_service.model;
 
 import com.example.file_service.enums.FileStatus;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +22,7 @@ public class FileEntity {
     private Long length;
     @Column(name = "filename_orig")
     private String originalFilename;
+    @Enumerated(value = EnumType.STRING)
     @Column(name = "status")
     private FileStatus status;
 }

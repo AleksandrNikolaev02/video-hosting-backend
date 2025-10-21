@@ -1,5 +1,6 @@
 package com.example.camunda.config;
 
+import com.example.dto.PostMessageDTO;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -49,6 +50,12 @@ public class KafkaConfig {
     }
 
     @Bean
+    public ConsumerFactory<String, PostMessageDTO> consumerFactoryPostMessageDTO() {
+        return new DefaultKafkaConsumerFactory<>(getConsumerConfig(), new StringDeserializer(),
+                new JsonDeserializer<>());
+    }
+
+    @Bean
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
@@ -61,14 +68,27 @@ public class KafkaConfig {
         return factory;
     }
 
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, PostMessageDTO> postMessageDTOContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, PostMessageDTO> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactoryPostMessageDTO());
+
+        return factory;
+    }
+
     private Map<String, Object> getConsumerConfig() {
         return Map.of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer,
                 ConsumerConfig.GROUP_ID_CONFIG, groupId,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringSerializer.class,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonSerializer.class,
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class,
                 ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest",
+                JsonDeserializer.TRUSTED_PACKAGES, "*",
+                ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000,
+                ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000,
+                ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 5000
         );
     }
 

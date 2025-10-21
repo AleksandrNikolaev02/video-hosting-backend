@@ -2,6 +2,7 @@ package com.example.business.service;
 
 import com.example.business.config.TopicConfig;
 import com.example.business.dto.BelongEvaluateDTO;
+import com.example.business.dto.CompensatingTransactionDTO;
 import com.example.business.dto.CreateBaseVideoDTO;
 import com.example.business.dto.DeleteVideoDTO;
 import com.example.business.dto.EvaluateVideoDTO;
@@ -11,7 +12,6 @@ import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.enums.ChannelStatus;
-import com.example.business.enums.PlaylistStatus;
 import com.example.business.enums.VideoStatus;
 import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.exception.UserNotFoundException;
@@ -115,15 +115,19 @@ public class VideoService {
                    topicPartitions = @TopicPartition(
                         topic = "${topics.delete-data-channel}",
                         partitions = "0"
-                   )
+                   ),
+            containerFactory = "factoryKafkaDeleteChannelDTO"
     )
     @Transactional
-    public void handleDeleteDataChannel(Object object) {
+    public void handleDeleteDataChannel(KafkaDeleteChannelDTO dto) {
         StatusProcessChannel status = StatusProcessChannel.DATA_SUCCESS;
-        KafkaDeleteChannelDTO dto = (KafkaDeleteChannelDTO) object;
         try {
+            log.info("Начало выполнения смены статусов у видео...");
+
             Channel channel = findEntityService.getChannelById(dto.channelId());
             channel.getVideos().forEach(video -> video.setVideoStatus(VideoStatus.DELETED));
+
+            log.info("Смена статусов у видео завершилась успешно!");
         } catch (Exception e) {
             status = StatusProcessChannel.DATA_FAILURE;
 
@@ -133,6 +137,7 @@ public class VideoService {
         } finally {
             PostMessageDTO message = new PostMessageDTO(status, dto.pipelineKey());
             kafkaTemplate.send(topicConfig.getPublishEventTopic(), message);
+            log.info("Отправлено сообщение в Camunda");
         }
     }
 
@@ -140,12 +145,11 @@ public class VideoService {
             topicPartitions = @TopicPartition(
                     topic = "${topics.compensating-transaction-business-service}",
                     partitions = "0"
-            )
+            ),
+            containerFactory = "factoryCompensatingTransactionDTO"
     )
-    public void compensatingTransactional(Object object) {
-        Long userId = (Long) object;
-
-        Channel channel = findEntityService.getUserById(userId).getChannel();
+    public void compensatingTransactional(CompensatingTransactionDTO dto) {
+        Channel channel = findEntityService.getUserById(dto.userId()).getChannel();
         channel.setStatus(ChannelStatus.ACTIVE);
 
         channel.getVideos().forEach(video -> video.setVideoStatus(VideoStatus.UPLOADED));

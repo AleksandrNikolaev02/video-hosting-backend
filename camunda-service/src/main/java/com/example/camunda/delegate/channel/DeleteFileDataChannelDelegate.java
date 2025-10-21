@@ -31,7 +31,10 @@ public class DeleteFileDataChannelDelegate implements JavaDelegate {
         Map<String, Object> variables = delegateExecution.getVariables();
 
         ResponseEntity<Void> response = fileService.deleteChannel((Long) variables.get(
-                parametersConfig.getNameChannelId()), (String) variables.get(parametersConfig.getNamePipelineKey())
+                parametersConfig.getUserId()),
+                (String) variables.get(
+                        parametersConfig.getNamePipelineKey()
+                )
         );
 
         if (response.getStatusCode().isError()) {

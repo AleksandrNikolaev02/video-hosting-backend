@@ -1,5 +1,7 @@
 package com.example.business.config;
 
+import com.example.business.dto.CompensatingTransactionDTO;
+import com.example.business.dto.KafkaDeleteChannelDTO;
 import com.example.dto.UserDTO;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -59,10 +61,40 @@ public class KafkaConfig {
     }
 
     @Bean
+    public ConsumerFactory<String, KafkaDeleteChannelDTO> consumerFactoryKafkaDeleteChannelDTO() {
+        return new DefaultKafkaConsumerFactory<>(getConsumerConfig(), new StringDeserializer(),
+                new JsonDeserializer<>(KafkaDeleteChannelDTO.class));
+    }
+
+    @Bean
     public ConcurrentKafkaListenerContainerFactory<String, UserDTO> kafkaTemplateTaskDetailsListener() {
         ConcurrentKafkaListenerContainerFactory<String, UserDTO> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactoryUserDTO());
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, KafkaDeleteChannelDTO> factoryKafkaDeleteChannelDTO() {
+        ConcurrentKafkaListenerContainerFactory<String, KafkaDeleteChannelDTO> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactoryKafkaDeleteChannelDTO());
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, CompensatingTransactionDTO> compensatingTransactionDTOConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>(getConsumerConfig(), new StringDeserializer(),
+                new JsonDeserializer<>(CompensatingTransactionDTO.class));
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, CompensatingTransactionDTO> factoryCompensatingTransactionDTO() {
+        ConcurrentKafkaListenerContainerFactory<String, CompensatingTransactionDTO> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+
+        factory.setConsumerFactory(compensatingTransactionDTOConsumerFactory());
+
         return factory;
     }
 
@@ -78,10 +110,13 @@ public class KafkaConfig {
         return Map.of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer,
                 ConsumerConfig.GROUP_ID_CONFIG, groupId,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringSerializer.class,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonSerializer.class,
-                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class,
+                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false,
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest",
+                ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000,
+                ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000,
+                ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 5000
         );
     }
 

@@ -262,6 +262,7 @@ public class FileService {
 
     @Transactional
     public void deleteChannel(Long userId, String pipelineKey) {
+        log.info("Начала пометки файлов как удаленные...");
         StatusProcessChannel status = StatusProcessChannel.FILE_SUCCESS;
 
         try {
@@ -270,12 +271,19 @@ public class FileService {
 
             List<PreviewEntity> previews = previewEntityRepository.findByUserId(userId);
             previews.forEach(preview -> preview.setStatus(FileStatus.DELETED));
+
+            log.info("Пометка файлов выполнилась успешно!");
         } catch (Exception e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 
             status = StatusProcessChannel.FILE_FAILURE;
+
+            log.error("Пометка завершилась с ошибкой: {}!", e.getMessage());
         } finally {
             PostMessageDTO dto = new PostMessageDTO(status, pipelineKey);
+
+            log.info("Отправка сообщения в Camunda.");
+
             kafkaTemplate.send(topicConfig.getPublishEventTopic(), dto);
         }
     }

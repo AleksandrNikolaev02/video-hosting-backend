@@ -10,17 +10,12 @@
             <column name="status" type="java.lang.String"/>
         </addColumn>
 
-        <addColumn tableName="videos">
-            <column name="status" type="java.lang.String"/>
-        </addColumn>
-
         <addColumn tableName="playlists">
             <column name="status" type="java.lang.String"/>
         </addColumn>
 
         <rollback>
             <dropColumn tableName="channels" columnName="status"/>
-            <dropColumn tableName="videos" columnName="status"/>
             <dropColumn tableName="playlists" columnName="status"/>
         </rollback>
     </changeSet>

@@ -179,20 +179,6 @@ public class ChannelService {
         blockedChannelRepository.deleteAll(channels);
     }
 
-    @KafkaListener(groupId = "${kafka.group-id}",
-                   topicPartitions = @TopicPartition(
-                           topic = "${topics.compensating-transaction}",
-                           partitions = "0"
-                   )
-    )
-    public void handleCompensatingTransaction(String str) {
-        log.info("Получен запрос на запуск компенсирующий транзакции удаления канала...");
-
-        Long userId = Long.parseLong(str);
-
-        User user = findEntityService.getUserById(userId);
-    }
-
     private void validateChannelAlreadyExists(Channel channel) {
         if (channel != null) {
             throw new ChannelAlreadyExistsException("You already have a channel!");
