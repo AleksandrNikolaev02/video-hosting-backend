@@ -36,6 +36,8 @@ import com.example.file_service.model.PartFile;
 import com.example.file_service.repository.PreviewEntityRepository;
 import com.example.file_service.repository.VideoEntityRepository;
 import com.example.file_service.util.EventToTopicsStorage;
+import com.example.file_service.worker.DeleteFilesWorker;
+import com.example.file_service.worker.DeletePreviewWorker;
 import io.minio.BucketExistsArgs;
 import io.minio.ComposeObjectArgs;
 import io.minio.ComposeSource;
@@ -60,6 +62,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpRange;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.multipart.MultipartFile;
@@ -71,6 +74,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 @Service
 @Slf4j
@@ -89,6 +93,9 @@ public class FileService {
     private final PreviewEntityRepository previewEntityRepository;
     private final Mapper mapper;
     private final FileEntityMapper fileEntityMapper;
+    private final DeleteFilesWorker deleteFilesWorker;
+    private final DeletePreviewWorker deletePreviewWorker;
+    private final ExecutorService executorService;
 
     @SneakyThrows
     @Transactional
@@ -286,6 +293,16 @@ public class FileService {
 
             kafkaTemplate.send(topicConfig.getPublishEventTopic(), dto);
         }
+    }
+
+    @Scheduled(fixedRateString = "${schedule.time-clean-files}")
+    public void deleteMarkedFiles() {
+        executorService.submit(deleteFilesWorker::execute);
+    }
+
+    @Scheduled(fixedRateString = "${schedule.time-clean-images}")
+    public void deleteMarkedImages() {
+        executorService.submit(deletePreviewWorker::execute);
     }
 
     private PutObjectArgs createPutObjectArgsFromFile(MultipartFile file, Long userId, UUID filename) {

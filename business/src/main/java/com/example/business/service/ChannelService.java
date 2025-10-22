@@ -22,24 +22,22 @@ import com.example.business.repository.ChannelRepository;
 import com.example.business.repository.RequestChannelRepository;
 import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
+import com.example.business.worker.UnlockExpiresChannelsWorker;
 import com.example.dto.PostMessageDTO;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -54,6 +52,8 @@ public class ChannelService {
     private final BlockedChannelValidator blockedChannelValidator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final TopicConfig topicConfig;
+    private final ExecutorService executorService;
+    private final UnlockExpiresChannelsWorker unlockExpiresChannelsWorker;
 
     public void createChannel(CreateChannelDTO dto, Long userId) {
         User authorChannel = findEntityService.getUserById(userId);
@@ -168,15 +168,14 @@ public class ChannelService {
         blockedChannelRepository.delete(blockedChannel);
     }
 
-    @Async
-    @Transactional
-    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelayString = "${schedule.time-expired-channel}", timeUnit = TimeUnit.SECONDS)
     public void unblockExpiresChannels() {
-        log.info("Search expired blocked channels...");
+        executorService.submit(unlockExpiresChannelsWorker::execute);
+    }
 
-        List<BlockedChannel> channels = blockedChannelRepository.findAllExpiredChannels(LocalDateTime.now());
+    @Scheduled(fixedDelayString = "${schedule.time-delete-channels}", timeUnit = TimeUnit.SECONDS)
+    public void deleteMarkedChannels() {
 
-        blockedChannelRepository.deleteAll(channels);
     }
 
     private void validateChannelAlreadyExists(Channel channel) {

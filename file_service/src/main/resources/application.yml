@@ -62,6 +62,10 @@ topics:
   create-video: create-video-in-db
   publish-event-topic: publish-event
 
+schedule:
+  time-clean-files: 30000
+  time-clean-images: 30000
+
 metrics:
   error-minio-service-metric: error_minio_service_metric
   success-minio-service-metric: success_minio_service_metric

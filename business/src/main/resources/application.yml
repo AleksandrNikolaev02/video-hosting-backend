@@ -39,6 +39,11 @@ elasticsearch:
   host: localhost
   port: 9200
 
+# в секундах
+schedule:
+  time-expired-channel: 10
+  time-delete-channels: 30
+
 topics:
   delete-file-request: delete-file-request
   get-file-request: get-file-request

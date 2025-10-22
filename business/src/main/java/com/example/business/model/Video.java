@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,8 +39,10 @@ public class Video {
     @Id
     @Column(name = "filename", unique = true, nullable = false)
     private UUID filename;
+    @BatchSize(size = 1000)
     @OneToMany(mappedBy = "video", cascade = CascadeType.ALL, orphanRemoval = true)
     private Collection<Like> likes = new ArrayList<>();
+    @BatchSize(size = 1000)
     @OneToMany(mappedBy = "video", cascade = CascadeType.ALL, orphanRemoval = true)
     private Collection<Dislike> dislikes = new ArrayList<>();
     @Column(name = "description")
@@ -67,6 +70,7 @@ public class Video {
             inverseJoinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id")
     )
     private Set<Tag> tags = new HashSet<>();
+    @BatchSize(size = 1000)
     @OneToMany(mappedBy = "video", cascade = CascadeType.ALL, orphanRemoval = true)
     private Collection<Viewing> viewings = new ArrayList<>();
     @ManyToOne

@@ -49,7 +49,6 @@ public class CamundaService {
                    topics = "${topics.publish-event-topic}",
                    containerFactory = "postMessageDTOContainerFactory")
     public void handleEvent(PostMessageDTO dto) {
-        log.info("Пришло событие {}", dto.status().name());
         log.info("Начало обработки события Kafka...");
 
         if (dto.status().equals(StatusProcessChannel.DATA_SUCCESS)) {

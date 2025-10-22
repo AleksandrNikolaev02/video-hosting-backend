@@ -2,7 +2,6 @@ package com.example.business.repository;
 
 import com.example.business.dto.GetEvaluatesVideoDTO;
 import com.example.business.model.Playlist;
-import com.example.business.model.User;
 import com.example.business.model.Video;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
