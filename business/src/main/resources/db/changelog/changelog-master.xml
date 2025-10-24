@@ -37,4 +37,8 @@
     <include file="db/changelog/changes/create-blocked_channels-table-2025-10-16.xml"/>
     <include file="db/changelog/changes/change-column-type-blocked_channels-2025-10-16.xml"/>
     <include file="db/changelog/changes/add-column-status-in-channels-table-2025-10-20.xml"/>
+    <include file="db/changelog/changes/create-comments-table-2025-10-24.xml"/>
+    <include file="db/changelog/changes/add-primary-key-to-table-comments-2025-10-24.xml"/>
+    <include file="db/changelog/changes/create-comments-sequence-2025-10-24.xml"/>
+    <include file="db/changelog/changes/add-column-to-comments-table-2025-10-24.xml"/>
 </databaseChangeLog>

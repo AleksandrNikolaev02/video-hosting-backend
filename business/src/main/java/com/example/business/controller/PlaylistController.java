@@ -65,7 +65,6 @@ public class PlaylistController {
     public List<GetPlaylistsDTO> getPlaylistsById(@RequestHeader("X-user-id") Long userId,
                                                   @PageableDefault Pageable pageable) {
         return playlistService.getAllPlaylistsByUser(userId, pageable)
-                .stream()
                 .map(playlistMapper::getPlaylistFromPlaylist)
                 .toList();
     }
@@ -76,7 +75,6 @@ public class PlaylistController {
                                                    @PathVariable("id") Long playlistId,
                                                    @PageableDefault Pageable pageable) {
         return playlistService.getAllVideoFromPlaylist(userId, pageable, playlistId)
-                .stream()
                 .map(videoMapper::getVideoDtoFromVideo)
                 .toList();
     }

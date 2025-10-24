@@ -28,6 +28,18 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
 
     List<Video> findByPlaylist(Playlist playlist, Pageable pageable);
 
+    @Query(value = """
+        SELECT video FROM Video video
+            WHERE video.playlist.id = :playlistId
+                AND video.videoStatus <> com.example.business.enums.VideoStatus.DELETED
+    """,
+    countQuery = """
+        SELECT video FROM Video video
+            WHERE video.playlist.id = :playlistId
+                AND video.videoStatus <> com.example.business.enums.VideoStatus.DELETED
+    """)
+    Page<Video> findAllVideoByPlaylistBesidesDeleted(@Param("playlistId") Long playlistId, Pageable pageable);
+
     @Modifying
     @Query("DELETE FROM Video video WHERE video.channel.id = :channel_id")
     void deleteByChannelId(@Param("channel_id") Long channelId);

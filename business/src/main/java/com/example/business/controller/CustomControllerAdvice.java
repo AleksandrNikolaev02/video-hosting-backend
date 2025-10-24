@@ -1,12 +1,16 @@
 package com.example.business.controller;
 
+import com.example.business.exception.ChannelAlreadyDeletedException;
 import com.example.business.exception.ChannelAlreadyExistsException;
 import com.example.business.exception.ChannelBlockedException;
 import com.example.business.exception.ChannelNotFoundException;
+import com.example.business.exception.CommentNotFoundException;
+import com.example.business.exception.PlaylistAlreadyDeletedException;
 import com.example.business.exception.PlaylistNotFoundException;
 import com.example.business.exception.RequestNotFoundException;
 import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.exception.UserNotFoundException;
+import com.example.business.exception.VideoAlreadyDeletedException;
 import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
@@ -104,5 +108,33 @@ public class CustomControllerAdvice {
     public ResponseEntity<String> handle(ChannelBlockedException exception) {
         log.error(exception.getMessage());
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(value = ChannelAlreadyDeletedException.class)
+    public ResponseEntity<String> handle(ChannelAlreadyDeletedException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = PlaylistAlreadyDeletedException.class)
+    public ResponseEntity<String> handle(PlaylistAlreadyDeletedException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = VideoAlreadyDeletedException.class)
+    public ResponseEntity<String> handle(VideoAlreadyDeletedException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = CommentNotFoundException.class)
+    public ResponseEntity<String> handle(CommentNotFoundException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 }

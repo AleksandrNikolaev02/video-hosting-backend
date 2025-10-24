@@ -23,7 +23,6 @@ import com.example.business.model.Dislike;
 import com.example.business.model.Like;
 import com.example.business.model.User;
 import com.example.business.model.Video;
-import com.example.business.repository.ChannelRepository;
 import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.BlockedChannelValidator;
@@ -56,22 +55,8 @@ public class VideoService {
     private final UserRepository userRepository;
     private final FindEntityService findEntityService;
     private final PermissionValidator permissionValidator;
-    private final ChannelRepository channelRepository;
     private final BlockedChannelValidator blockedChannelValidator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
-
-//    @KafkaListener(topics = "${topics.create-video}",
-//                   groupId = "${kafka.group-id}",
-//                   errorHandler = "createVideoHandler")
-//    public void createVideo(CreateVideoDTO dto) {
-//        User creator = getUserById(dto.getUserId());
-//
-//        Video video = new Video();
-//        video.setPath(dto.getPath());
-//        video.setCreator(creator);
-//
-//        videoRepository.save(video);
-//    }
 
     @Transactional
     public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
@@ -89,8 +74,7 @@ public class VideoService {
 
         blockedChannelValidator.validate(creator.getChannel());
 
-        Optional<Channel> channel = channelRepository.findByAuthor(creator);
-        if (channel.isEmpty()) {
+        if (creator.getChannel() == null) {
             throw new UserNotCreateChannelException("User does not create channel yet!");
         }
 
@@ -173,7 +157,10 @@ public class VideoService {
         blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
+        Channel channel = findEntityService.getChannelById(video.getCreator().getId());
+
         video.setVideoStatus(VideoStatus.UPLOADED);
+        video.setChannel(channel);
         video.setDate(LocalDateTime.now());
 
         videoRepository.save(video);

@@ -21,6 +21,7 @@ import com.example.business.repository.BlockedChannelRepository;
 import com.example.business.repository.ChannelRepository;
 import com.example.business.repository.RequestChannelRepository;
 import com.example.business.validator.BlockedChannelValidator;
+import com.example.business.validator.DeleteStatusValidator;
 import com.example.business.validator.PermissionValidator;
 import com.example.business.worker.DeleteChannelsWorker;
 import com.example.business.worker.DeletePlaylistsWorker;
@@ -60,6 +61,7 @@ public class ChannelService {
     private final DeletePlaylistsWorker deletePlaylistsWorker;
     private final DeleteVideosWorker deleteVideosWorker;
     private final DeleteChannelsWorker deleteChannelsWorker;
+    private final DeleteStatusValidator deleteStatusValidator;
 
     public void createChannel(CreateChannelDTO dto, Long userId) {
         User authorChannel = findEntityService.getUserById(userId);
@@ -76,6 +78,8 @@ public class ChannelService {
 
         Channel channel = channelRepository.findByAuthor(author)
                 .orElseThrow(() -> new NoRightsException("You are not creator channel!"));
+
+        deleteStatusValidator.validate(channel);
 
         blockedChannelValidator.validate(channel);
         permissionValidator.validateChannelCreator(channel, userId);
@@ -117,12 +121,17 @@ public class ChannelService {
     public void dropChannel(Long channelId) {
         Channel channel = findEntityService.getChannelById(channelId);
 
+        deleteStatusValidator.validate(channel);
+
         channelRepository.delete(channel);
     }
 
     @Transactional
     public void changeOwnerChannel(ChangeOwnerDTO dto) {
         Channel channel = findEntityService.getChannelById(dto.channelId());
+
+        deleteStatusValidator.validate(channel);
+
         User newOwner = findEntityService.getUserById(dto.newOwnerId());
 
         channel.setAuthor(newOwner);
@@ -157,6 +166,8 @@ public class ChannelService {
 
     public void blockVideo(BlockedChannelDTO dto) {
         Channel channel = findEntityService.getChannelById(dto.channelId());
+
+        deleteStatusValidator.validate(channel);
 
         BlockedChannel blockedChannel = BlockedChannelFactory.create(dto, channel);
 

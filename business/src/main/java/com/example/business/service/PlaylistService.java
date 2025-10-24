@@ -8,6 +8,7 @@ import com.example.business.dto.DeletePlaylistDTO;
 import com.example.business.dto.KafkaDeleteChannelDTO;
 import com.example.business.enums.ChannelStatus;
 import com.example.business.enums.PlaylistStatus;
+import com.example.business.exception.ChannelNotFoundException;
 import com.example.business.factory.PlaylistFactory;
 import com.example.business.model.Channel;
 import com.example.business.model.Playlist;
@@ -16,11 +17,13 @@ import com.example.business.model.Video;
 import com.example.business.repository.PlaylistRepository;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.BlockedChannelValidator;
+import com.example.business.validator.DeleteStatusValidator;
 import com.example.business.validator.PermissionValidator;
 import com.example.dto.PostMessageDTO;
 import com.example.dto.StatusProcessChannel;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.TopicPartition;
@@ -29,7 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.util.List;
 
 @Service
 @Slf4j
@@ -42,11 +44,19 @@ public class PlaylistService {
     private final BlockedChannelValidator blockedChannelValidator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final TopicConfig topicConfig;
+    private final DeleteStatusValidator deleteStatusValidator;
 
     public void createPlaylist(CreatePlaylistDTO dto, Long userId) {
         User user = findEntityService.getUserById(userId);
 
-        blockedChannelValidator.validate(user.getChannel());
+        Channel channel = user.getChannel();
+        if (channel == null) {
+            throw new ChannelNotFoundException("User have not already had a channel!");
+        }
+
+        deleteStatusValidator.validate(channel);
+
+        blockedChannelValidator.validate(channel);
 
         Playlist playlist = PlaylistFactory.create(user, dto.name());
 
@@ -55,9 +65,11 @@ public class PlaylistService {
 
     public void addVideoInPlaylist(AddVideoInPlaylistDTO dto, Long userId) {
         Playlist playlist = findEntityService.getPlaylistById(dto.playlistId());
+        Channel channel = playlist.getChannel();
 
-        blockedChannelValidator.validate(playlist.getChannel());
-        validator.validatePlaylistCreator(playlist,userId);
+        deleteStatusValidator.validate(channel);
+        blockedChannelValidator.validate(channel);
+        validator.validatePlaylistCreator(playlist, userId);
 
         Video video = findEntityService.getVideoById(dto.filename());
 
@@ -67,18 +79,19 @@ public class PlaylistService {
         playlistRepository.save(playlist);
     }
 
-    public List<Playlist> getAllPlaylistsByUser(Long userId, Pageable pageable) {
+    public Page<Playlist> getAllPlaylistsByUser(Long userId, Pageable pageable) {
         User user = findEntityService.getUserById(userId);
 
-        return playlistRepository.findByOwner(user, pageable);
+        return playlistRepository.findAllPlaylistByUserIdBesidesDeleted(user.getId(), pageable);
     }
 
-    public List<Video> getAllVideoFromPlaylist(Long userId, Pageable pageable, Long playlistId) {
+    public Page<Video> getAllVideoFromPlaylist(Long userId, Pageable pageable, Long playlistId) {
         Playlist playlist = findEntityService.getPlaylistById(playlistId);
 
+        deleteStatusValidator.validate(playlist);
         validator.validatePlaylistCreator(playlist, userId);
 
-        return videoRepository.findByPlaylist(playlist, pageable);
+        return videoRepository.findAllVideoByPlaylistBesidesDeleted(playlist.getId(), pageable);
     }
 
     @Transactional

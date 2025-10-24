@@ -1,18 +1,21 @@
 package com.example.business.service;
 
 import com.example.business.exception.ChannelNotFoundException;
+import com.example.business.exception.CommentNotFoundException;
 import com.example.business.exception.PlaylistNotFoundException;
 import com.example.business.exception.RequestNotFoundException;
 import com.example.business.exception.UserNotFoundException;
 import com.example.business.exception.VideoNotFoundException;
 import com.example.business.model.BlockedChannel;
 import com.example.business.model.Channel;
+import com.example.business.model.Comment;
 import com.example.business.model.Playlist;
 import com.example.business.model.RequestChannel;
 import com.example.business.model.User;
 import com.example.business.model.Video;
 import com.example.business.repository.BlockedChannelRepository;
 import com.example.business.repository.ChannelRepository;
+import com.example.business.repository.CommentRepository;
 import com.example.business.repository.PlaylistRepository;
 import com.example.business.repository.RequestChannelRepository;
 import com.example.business.repository.UserRepository;
@@ -31,6 +34,7 @@ public class FindEntityService {
     private final ChannelRepository channelRepository;
     private final RequestChannelRepository requestChannelRepository;
     private final BlockedChannelRepository blockedChannelRepository;
+    private final CommentRepository commentRepository;
 
     public Video getVideoById(UUID filename) {
         return videoRepository.findById(filename).orElseThrow(()
@@ -67,6 +71,13 @@ public class FindEntityService {
         return blockedChannelRepository.findById(channelId)
                 .orElseThrow(() -> new ChannelNotFoundException(
                         String.format("Blocked channel with id %d not found", channelId)
+                ));
+    }
+
+    public Comment getCommentById(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentNotFoundException(
+                        String.format("Comment with id=%d not found", commentId)
                 ));
     }
 }

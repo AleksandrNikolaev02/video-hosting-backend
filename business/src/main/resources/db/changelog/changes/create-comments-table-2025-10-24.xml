@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create-comments-table" author="alex">
+        <createTable tableName="comments">
+            <column name="id" type="java.lang.Long"/>
+            <column name="content" type="longtext"/>
+            <column name="created_at" type="datetime"/>
+            <column name="user_id" type="java.lang.Long"/>
+            <column name="video_id" type="UUID"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="comments" baseColumnNames="user_id"
+                                 constraintName="fk_comments_users"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="comments" baseColumnNames="video_id"
+                                 constraintName="fk_comments_videos"
+                                 referencedTableName="videos"
+                                 referencedColumnNames="filename"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="comments" constraintName="fk_comments_users"/>
+            <dropForeignKeyConstraint baseTableName="comments" constraintName="fk_comments_videos"/>
+            <dropTable tableName="comments"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

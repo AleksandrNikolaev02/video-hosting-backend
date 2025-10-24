@@ -1,17 +1,25 @@
 package com.example.business.repository;
 
 import com.example.business.model.Playlist;
-import com.example.business.model.User;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
 public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
-    List<Playlist> findByOwner(User user, Pageable pageable);
+    @Query(value = """
+            SELECT playlist FROM Playlist playlist
+                    WHERE playlist.owner.id = :playlistId
+                            AND playlist.status <> com.example.business.enums.PlaylistStatus.DELETED
+    """, countQuery = """
+        SELECT COUNT(playlist) FROM Playlist playlist
+                    WHERE playlist.owner.id = :userId
+                            AND playlist.status <> com.example.business.enums.PlaylistStatus.DELETED
+    """)
+    Page<Playlist> findAllPlaylistByUserIdBesidesDeleted(@Param("userId") Long userId,
+                                                         Pageable pageable);
 
     @Modifying
     @Query("""
