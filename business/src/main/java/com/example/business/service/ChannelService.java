@@ -22,6 +22,9 @@ import com.example.business.repository.ChannelRepository;
 import com.example.business.repository.RequestChannelRepository;
 import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
+import com.example.business.worker.DeleteChannelsWorker;
+import com.example.business.worker.DeletePlaylistsWorker;
+import com.example.business.worker.DeleteVideosWorker;
 import com.example.business.worker.UnlockExpiresChannelsWorker;
 import com.example.dto.PostMessageDTO;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
@@ -54,6 +57,9 @@ public class ChannelService {
     private final TopicConfig topicConfig;
     private final ExecutorService executorService;
     private final UnlockExpiresChannelsWorker unlockExpiresChannelsWorker;
+    private final DeletePlaylistsWorker deletePlaylistsWorker;
+    private final DeleteVideosWorker deleteVideosWorker;
+    private final DeleteChannelsWorker deleteChannelsWorker;
 
     public void createChannel(CreateChannelDTO dto, Long userId) {
         User authorChannel = findEntityService.getUserById(userId);
@@ -173,9 +179,19 @@ public class ChannelService {
         executorService.submit(unlockExpiresChannelsWorker::execute);
     }
 
-    @Scheduled(fixedDelayString = "${schedule.time-delete-channels}", timeUnit = TimeUnit.SECONDS)
-    public void deleteMarkedChannels() {
+    @Scheduled(fixedDelayString = "${schedule.time-delete-videos}", timeUnit = TimeUnit.SECONDS)
+    public void deleteMarkedVideos() {
+        executorService.submit(deleteVideosWorker::execute);
+    }
 
+    @Scheduled(fixedDelayString = "${schedule.time-delete-playlist}", timeUnit = TimeUnit.SECONDS)
+    public void deleteMarkedPlaylist() {
+        executorService.submit(deletePlaylistsWorker::execute);
+    }
+
+    @Scheduled(fixedDelayString = "${schedule.time-delete-channel}", timeUnit = TimeUnit.SECONDS)
+    public void deleteMarkedChannels() {
+        executorService.submit(deleteChannelsWorker::execute);
     }
 
     private void validateChannelAlreadyExists(Channel channel) {

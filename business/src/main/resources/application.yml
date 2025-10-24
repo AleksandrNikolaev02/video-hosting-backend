@@ -42,7 +42,9 @@ elasticsearch:
 # в секундах
 schedule:
   time-expired-channel: 10
-  time-delete-channels: 30
+  time-delete-videos: 30
+  time-delete-playlist: 40
+  time-delete-channel: 50
 
 topics:
   delete-file-request: delete-file-request

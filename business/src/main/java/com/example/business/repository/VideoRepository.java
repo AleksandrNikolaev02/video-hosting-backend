@@ -6,6 +6,7 @@ import com.example.business.model.Video;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,4 +27,8 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
     GetEvaluatesVideoDTO getAllEvaluatesByVideo(@Param("video_id") UUID videoId);
 
     List<Video> findByPlaylist(Playlist playlist, Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM Video video WHERE video.channel.id = :channel_id")
+    void deleteByChannelId(@Param("channel_id") Long channelId);
 }
