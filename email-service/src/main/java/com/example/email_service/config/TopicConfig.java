@@ -1,4 +1,4 @@
-package com.example.business.config;
+package com.example.email_service.config;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -13,14 +13,12 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 @ConfigurationProperties(prefix = "topics")
 public class TopicConfig {
-    private String deleteDataChannel;
-    private String publishEventTopic;
     private String emailRequest;
 
     @Bean
-    public NewTopic createDeleteDataChannelTopic() {
-        return TopicBuilder.name(deleteDataChannel)
-                .partitions(2)
+    public NewTopic emailRequestTopic() {
+        return TopicBuilder.name(emailRequest)
+                .partitions(1)
                 .build();
     }
 }

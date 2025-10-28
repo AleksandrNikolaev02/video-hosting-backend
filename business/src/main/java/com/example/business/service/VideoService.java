@@ -23,6 +23,7 @@ import com.example.business.model.Video;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
+import com.example.dto.EmailRequestDTO;
 import com.example.dto.PostMessageDTO;
 import com.example.dto.StatusProcessChannel;
 import lombok.AllArgsConstructor;
@@ -39,6 +40,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 @Service
 @Slf4j
@@ -51,6 +53,7 @@ public class VideoService {
     private final BlockedChannelValidator blockedChannelValidator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final EvaluateService evaluateService;
+    private final ExecutorService executorService;
 
     @Transactional
     public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
@@ -151,11 +154,13 @@ public class VideoService {
         blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
-        Channel channel = findEntityService.getChannelById(video.getCreator().getId());
+        Channel channel = findEntityService.getChannelByCreator(video.getCreator());
 
         video.setVideoStatus(VideoStatus.UPLOADED);
         video.setChannel(channel);
         video.setDate(LocalDateTime.now());
+
+        sendEmailsAllSubscribers(channel, video);
 
         videoRepository.save(video);
     }
@@ -195,5 +200,20 @@ public class VideoService {
         }
 
         return belongEvaluateDTO;
+    }
+
+    private void sendEmailsAllSubscribers(Channel channel, Video video) {
+        executorService.submit(() -> channel.getSubscriptions().forEach(
+                subscription -> {
+                    log.info("Отправка уведомления пользователю с id={}!", subscription.getSubscriber().getId());
+
+                    EmailRequestDTO dto = new EmailRequestDTO();
+                    dto.setEmail(subscription.getSubscriber().getProfile().getEmail());
+                    dto.setVideoName(video.getName());
+                    dto.setChannelName(channel.getName());
+
+                    kafkaTemplate.send(topicConfig.getEmailRequest(), dto);
+                }
+        ));
     }
 }

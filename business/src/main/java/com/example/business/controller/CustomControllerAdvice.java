@@ -8,6 +8,8 @@ import com.example.business.exception.CommentNotFoundException;
 import com.example.business.exception.PlaylistAlreadyDeletedException;
 import com.example.business.exception.PlaylistNotFoundException;
 import com.example.business.exception.RequestNotFoundException;
+import com.example.business.exception.SubscribeAlreadyExistException;
+import com.example.business.exception.SubscriptionNotFoundException;
 import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.exception.UserNotFoundException;
 import com.example.business.exception.VideoAlreadyDeletedException;
@@ -133,6 +135,20 @@ public class CustomControllerAdvice {
 
     @ExceptionHandler(value = CommentNotFoundException.class)
     public ResponseEntity<String> handle(CommentNotFoundException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = SubscribeAlreadyExistException.class)
+    public ResponseEntity<String> handle(SubscribeAlreadyExistException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = SubscriptionNotFoundException.class)
+    public ResponseEntity<String> handle(SubscriptionNotFoundException exception) {
         log.error(exception.getMessage());
 
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);

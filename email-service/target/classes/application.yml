@@ -1,0 +1,21 @@
+server:
+  port: 8087
+
+spring:
+  mail:
+    host: smtp.gmail.com
+    username: u.nikolaev197112@gmail.com
+    password: npzjnxclfudrzbqt
+    port: 587
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls.enable: true
+
+kafka:
+  bootstrap-server: localhost:9092
+  group-id: file-service-group
+
+topics:
+  email-request: email-request

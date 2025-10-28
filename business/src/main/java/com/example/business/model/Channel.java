@@ -25,6 +25,7 @@ import org.hibernate.annotations.FetchMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @Entity
 @AllArgsConstructor
@@ -53,6 +54,8 @@ public class Channel {
     @Fetch(value = FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
     private Collection<Playlist> playlists = new ArrayList<>();
+    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Subscription> subscriptions = new ArrayList<>();
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     @Column(name = "count_subs")

@@ -58,6 +58,7 @@ topics:
   compensating-transaction-business-service: compensating-transaction-business-service
   delete-data-channel: delete-data-channel
   publish-event-topic: publish-event
+  email-request: email-request
 
 metrics:
   error-minio-service-metric: error_minio_service_metric

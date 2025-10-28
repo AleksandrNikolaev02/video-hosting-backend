@@ -34,4 +34,6 @@ public class User {
     @OneToMany(mappedBy = "creator")
     @Fetch(value = FetchMode.SUBSELECT)
     private List<RequestChannel> requests = new ArrayList<>();
+    @OneToMany(mappedBy = "subscriber", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Collection<Subscription> subscriptions = new ArrayList<>();
 }

@@ -80,4 +80,11 @@ public class FindEntityService {
                         String.format("Comment with id=%d not found", commentId)
                 ));
     }
+
+    public Channel getChannelByCreator(User creator) {
+        return channelRepository.findByAuthor(creator)
+                .orElseThrow(() -> new ChannelNotFoundException(
+                        String.format("Channel with author id %d not found!", creator.getId())
+                ));
+    }
 }

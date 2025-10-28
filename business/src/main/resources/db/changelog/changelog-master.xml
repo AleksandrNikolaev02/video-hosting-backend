@@ -43,4 +43,6 @@
     <include file="db/changelog/changes/add-column-to-comments-table-2025-10-24.xml"/>
     <include file="db/changelog/changes/add-column-to-comments-2025-10-27.xml"/>
     <include file="db/changelog/changes/add-column-to-reactions-2025-10-27.xml"/>
+    <include file="db/changelog/changes/create-subscriptions-sequence-2025-10-28.xml"/>
+    <include file="db/changelog/changes/create-subscriptions-table-2025-10-28.xml"/>
 </databaseChangeLog>
