@@ -1,6 +1,7 @@
 package com.example.business.model;
 
 import com.example.business.enums.VideoStatus;
+import com.example.business.util.Evaluatable;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,7 +36,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Video {
+public class Video implements Evaluatable {
     @Id
     @Column(name = "filename", unique = true, nullable = false)
     private UUID filename;

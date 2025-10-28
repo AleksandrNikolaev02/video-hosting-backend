@@ -14,16 +14,12 @@ import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.enums.ChannelStatus;
 import com.example.business.enums.VideoStatus;
 import com.example.business.exception.UserNotCreateChannelException;
-import com.example.business.exception.UserNotFoundException;
-import com.example.business.exception.VideoNotFoundException;
-import com.example.business.factory.ReactionFactory;
 import com.example.business.factory.VideoFactory;
 import com.example.business.model.Channel;
 import com.example.business.model.Dislike;
 import com.example.business.model.Like;
 import com.example.business.model.User;
 import com.example.business.model.Video;
-import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
@@ -48,15 +44,13 @@ import java.util.UUID;
 @Slf4j
 @AllArgsConstructor
 public class VideoService {
-
     private final TopicConfig topicConfig;
-
     private final VideoRepository videoRepository;
-    private final UserRepository userRepository;
     private final FindEntityService findEntityService;
     private final PermissionValidator permissionValidator;
     private final BlockedChannelValidator blockedChannelValidator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final EvaluateService evaluateService;
 
     @Transactional
     public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
@@ -70,7 +64,7 @@ public class VideoService {
     }
 
     public Video createVideo(CreateBaseVideoDTO dto, Long userId) {
-        User creator = getUserById(userId);
+        User creator = findEntityService.getUserById(userId);
 
         blockedChannelValidator.validate(creator.getChannel());
 
@@ -152,7 +146,7 @@ public class VideoService {
     }
 
     public void postVideo(UUID filename, Long userId) {
-        Video video = getVideoByPath(filename);
+        Video video = findEntityService.getVideoById(filename);
 
         blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
@@ -173,52 +167,8 @@ public class VideoService {
     @Transactional
     public void evaluateVideo(EvaluateVideoDTO dto, Long userId) {
         Video video = findEntityService.getVideoById(dto.filename());
-        User user = getUserById(userId);
 
-        Like currentLike = video.getLikes().stream()
-                .filter((like) -> like.getUser().getId().equals(userId))
-                .findFirst().orElse(null);
-
-        Dislike currentDislike = video.getDislikes().stream()
-                .filter((dislike -> dislike.getUser().getId().equals(userId)))
-                .findFirst().orElse(null);
-
-        switch (dto.evaluateType()) {
-            case LIKE -> {
-                if (currentLike != null) {
-                    video.getLikes().remove(currentLike);
-                } else {
-                    if (currentDislike != null) {
-                        video.getDislikes().remove(currentDislike);
-                    }
-
-                    addLike(video, user);
-                }
-            }
-            case DISLIKE -> {
-                if (currentDislike != null) {
-                    video.getDislikes().remove(currentDislike);
-                } else {
-                    if (currentLike != null) {
-                        video.getLikes().remove(currentLike);
-                    }
-
-                    addDislike(video, user);
-                }
-            }
-        }
-    }
-
-    private void addDislike(Video video, User user) {
-        Dislike dislike = ReactionFactory.dislike(video, user);
-
-        video.getDislikes().add(dislike);
-    }
-
-    private void addLike(Video video, User user) {
-        Like like = ReactionFactory.like(video, user);
-
-        video.getLikes().add(like);
+        evaluateService.evaluate(dto.evaluateType(), userId, video);
     }
 
     public GetEvaluatesVideoDTO getEvaluates(UUID filename) {
@@ -245,15 +195,5 @@ public class VideoService {
         }
 
         return belongEvaluateDTO;
-    }
-
-    private Video getVideoByPath(UUID filename) {
-        return videoRepository.findById(filename).orElseThrow(()
-                -> new VideoNotFoundException(String.format("Video with filename %s not found!", filename)));
-    }
-
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(()
-                -> new UserNotFoundException(String.format("User with id %d not found!", userId)));
     }
 }

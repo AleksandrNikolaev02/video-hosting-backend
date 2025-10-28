@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="add-column-to-reactions" author="alex">
+        <addColumn tableName="reactions">
+            <column name="comment_id" type="java.lang.Long"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="reactions" baseColumnNames="comment_id"
+                                 constraintName="fk_reactions_comments"
+                                 referencedTableName="comments"
+                                 referencedColumnNames="id"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="reactions" constraintName="fk_reactions_comments"/>
+            <dropColumn tableName="reactions" columnName="comment_id"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
