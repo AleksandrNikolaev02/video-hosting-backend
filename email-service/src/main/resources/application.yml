@@ -14,7 +14,7 @@ spring:
           starttls.enable: true
 
 kafka:
-  bootstrap-server: localhost:9092
+  bootstrap-server: kafka:9092
   group-id: file-service-group
 
 topics:

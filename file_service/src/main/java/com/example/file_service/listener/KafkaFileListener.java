@@ -6,7 +6,6 @@ import com.example.file_service.service.FileService;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,7 +16,8 @@ public class KafkaFileListener {
 
     @KafkaListener(topics = "${topics.get-file-request}",
             groupId = "${kafka.group-id}",
-            errorHandler = "customKafkaErrorHandler")
+            errorHandler = "customKafkaErrorHandler",
+            containerFactory = "concurrentKafkaListenerContainerFactory")
     //@SendTo("#{topicConfig.getGetFileReply()}")
     @SneakyThrows
     public String getFile(String path) {

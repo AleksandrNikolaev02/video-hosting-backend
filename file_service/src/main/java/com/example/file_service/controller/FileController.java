@@ -79,6 +79,7 @@ public class FileController {
         return ResponseEntity.ok("File was compare and save!");
     }
 
+    @Deprecated
     @Operation(summary = "Сгенерировать уникальный ключ для файла")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
@@ -125,9 +126,9 @@ public class FileController {
                          implementation = RequestGetPreviewDTO.class))),
             @ApiResponse(responseCode = "404", description = "File not found by filename: <filename>")
     })
-    @PostMapping(value = "/get_preview")
-    public ResponseEntity<byte[]> getPreview(@Validated @RequestBody RequestGetPreviewDTO dto) {
-        GetPreviewDTO getPreviewDTO = fileService.getPreview(dto);
+    @GetMapping(value = "/get_preview/{filename}")
+    public ResponseEntity<byte[]> getPreview(@PathVariable("filename") UUID filename) {
+        GetPreviewDTO getPreviewDTO = fileService.getPreview(filename);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(getPreviewDTO.contentType()))

@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Video implements Evaluatable {
     @Id
+    @UuidGenerator
     @Column(name = "filename", unique = true, nullable = false)
     private UUID filename;
     @BatchSize(size = 1000)
@@ -63,8 +65,7 @@ public class Video implements Evaluatable {
     @ManyToOne
     @JoinColumn(name = "playlist_id")
     private Playlist playlist;
-    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE,
-                           CascadeType.PERSIST, CascadeType.REFRESH})
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "videos_tags",
             joinColumns = @JoinColumn(name = "video_id", referencedColumnName = "filename"),

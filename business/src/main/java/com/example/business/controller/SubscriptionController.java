@@ -36,7 +36,7 @@ public class SubscriptionController {
 
     @Operation(summary = "Отписаться от канала пользователя")
     @PostMapping("/unsubscribe")
-    public ResponseEntity<Void> unsubscribe(@RequestHeader("X-ser-id") Long userId,
+    public ResponseEntity<Void> unsubscribe(@RequestHeader("X-user-id") Long userId,
                                             @Validated @RequestBody UnsubscribeDTO dto) {
         subscriptionService.unsubscribe(dto, userId);
 

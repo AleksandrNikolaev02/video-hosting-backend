@@ -16,6 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class GetVideoDTO {
     private UUID filename;
+    private Long userId;
     private String description;
     private String title;
     private String path;
@@ -24,4 +25,7 @@ public class GetVideoDTO {
     private Integer countViewing;
     private PreviewDTO video_preview;
     private Set<String> tags;
+    private Long channelId;
+    private String channelName;
+    private Integer subscribersCount;
 }

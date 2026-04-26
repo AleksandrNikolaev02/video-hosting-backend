@@ -30,6 +30,8 @@ public class VideoEntity extends FileEntity {
     private UUID filename;
     @Column(name = "key")
     private String key;
+    @Column(name = "business_id")
+    private UUID businessId;
     @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(value = FetchMode.SUBSELECT)
     @OrderBy(value = "partIndex ASC")

@@ -1,6 +1,7 @@
 package com.example.file_service.service;
 
 import com.example.dto.CreateVideoDTO;
+import com.example.dto.DeleteDataVideoEvent;
 import com.example.dto.Event;
 import com.example.dto.FileDataDTO;
 import com.example.dto.FileEventDTO;
@@ -14,13 +15,14 @@ import com.example.file_service.config.TopicConfig;
 import com.example.file_service.dto.ChunkFileDTO;
 import com.example.file_service.dto.DeletePreviewDTO;
 import com.example.file_service.dto.GetPreviewDTO;
-import com.example.file_service.dto.RequestGetPreviewDTO;
 import com.example.file_service.dto.SaveChunkResponseDTO;
 import com.example.file_service.dto.SaveChunksDTO;
 import com.example.file_service.dto.SavePreviewDTO;
 import com.example.file_service.dto.SavePreviewResponseDTO;
 import com.example.file_service.dto.UpdatePreviewDTO;
+import com.example.file_service.enums.DeleteStatus;
 import com.example.file_service.enums.FileStatus;
+import com.example.file_service.enums.FileType;
 import com.example.file_service.exception.FileNotFoundByKeyException;
 import com.example.file_service.exception.FileReadException;
 import com.example.file_service.exception.FileStorageException;
@@ -33,6 +35,7 @@ import com.example.file_service.metric.CustomMetricService;
 import com.example.file_service.model.PreviewEntity;
 import com.example.file_service.model.VideoEntity;
 import com.example.file_service.model.PartFile;
+import com.example.file_service.repository.PartFileRepository;
 import com.example.file_service.repository.PreviewEntityRepository;
 import com.example.file_service.repository.VideoEntityRepository;
 import com.example.file_service.util.EventToTopicsStorage;
@@ -61,6 +64,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpRange;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -70,11 +74,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 
 @Service
 @Slf4j
@@ -95,7 +99,9 @@ public class FileService {
     private final FileEntityMapper fileEntityMapper;
     private final DeleteFilesWorker deleteFilesWorker;
     private final DeletePreviewWorker deletePreviewWorker;
-    private final ExecutorService executorService;
+    private final AsyncService asyncService;
+    private final TransactionService transactionService;
+    private final PartFileRepository partFileRepository;
 
     @SneakyThrows
     @Transactional
@@ -132,7 +138,7 @@ public class FileService {
 
         PutObjectArgs putObjectArgs = PutObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
-                .object(String.format("%d/%s/%s/%s", userId,fileConfig.getVideoPath(),
+                .object(String.format("%d/%s/%s/%s", userId, fileConfig.getVideoPath(),
                         file.get().getFilename(), dto.partName()))
                 .stream(new ByteArrayInputStream(dto.data()), dto.data().length, -1)
                 .contentType(dto.contentType())
@@ -145,35 +151,51 @@ public class FileService {
         return saveChunkResponseDTO;
     }
 
-    @SneakyThrows
     @Transactional
     public void saveChunkFile(SaveChunksDTO dto) {
-        List<ComposeSource> sources = new ArrayList<>();
-
         VideoEntity file = videoEntityRepository.findByKey(dto.key()).orElseThrow(() ->
             new FileNotFoundByKeyException(String.format("File not found by key: %s", dto.key()))
         );
 
+        file.setBusinessId(dto.filename());
+        videoEntityRepository.save(file);
+
+        log.info("Завершено обновление информации о видео в БД. Файл: {}", file.getFilename());
+
+        compareChunks(file, dto);
+    }
+
+    private void compareChunks(VideoEntity file, SaveChunksDTO dto) {
+        log.info("Начало выполнения склейки частей видео. Файл: {}", file.getFilename());
+        List<ComposeSource> sources = new ArrayList<>();
+
         for (PartFile part : file.getParts()) {
+            String path = String.format("%d/%s/%s/%s", dto.userId(), fileConfig.getVideoPath(),
+                            file.getFilename(), part.getPartName());
+
             sources.add(ComposeSource.builder()
                     .bucket(fileConfig.getBucket())
-                    .object(String.format("%d/%s/%s/%s", dto.userId(),fileConfig.getVideoPath(),
-                            file.getFilename(), part.getPartName()))
+                    .object(path)
                     .build());
         }
 
-        minioClient.composeObject(
-                ComposeObjectArgs.builder()
-                        .bucket(fileConfig.getBucket())
-                        .object(String.format("%d/%s/%s", dto.userId(),fileConfig.getVideoPath(),
-                                file.getFilename()))
-                        .sources(sources)
-                        .userMetadata(Map.of("Original-Content-Type", file.getContentType()))
-                        .build()
-        );
+        try {
+            minioClient.composeObject(
+                    ComposeObjectArgs.builder()
+                            .bucket(fileConfig.getBucket())
+                            .object(String.format("%d/%s/%s", dto.userId(), fileConfig.getVideoPath(),
+                                    file.getBusinessId()))
+                            .sources(sources)
+                            .userMetadata(Map.of("Original-Content-Type", file.getContentType()))
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Ошибка при склейки частей видео: {}", e.getMessage());
+            throw new MinioException("Error composing file in Minio!", e);
+        }
 
-        videoDTOKafkaTemplate.send(topicConfig.getCreateVideo(),
-                                   fileEntityMapper.getCreateVideoDtoFromVideoEntity(file));
+        log.info("Выполнение склейки видео завершилось успешно!");
+        asyncService.excecuteTask(() -> removeGarbageDataFromFile(file.getFilename()));
     }
 
     public String findUniqueKeyForFile() {
@@ -212,24 +234,24 @@ public class FileService {
     @SneakyThrows
     public SavePreviewResponseDTO savePreview(Long userId, MultipartFile file, SavePreviewDTO dto) {
         PreviewEntity preview = previewEntityRepository.save(createPreviewEntity(file.getSize(), userId,
-                file.getContentType(), dto.originalFilename()));
+                file.getContentType(), dto));
 
         PutObjectArgs args = PutObjectArgs.builder()
                 .bucket(fileConfig.getBucket())
-                .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), preview.getFilename()))
+                .object(String.format("%d/%s/%s", userId, fileConfig.getPreviewPath(), preview.getBusinessId()))
                 .stream(new ByteArrayInputStream(file.getBytes()), file.getSize(), -1)
                 .contentType(file.getContentType())
                 .build();
 
         saveFileInMinio(args);
 
-        return new SavePreviewResponseDTO(file.getContentType(), preview.getFilename());
+        return new SavePreviewResponseDTO(file.getContentType(), preview.getBusinessId());
     }
 
-    public GetPreviewDTO getPreview(RequestGetPreviewDTO dto) {
-        PreviewEntity preview = getPreviewByFilename(dto.filename());
+    public GetPreviewDTO getPreview(UUID filename) {
+        PreviewEntity preview = getPreviewByFilename(filename);
 
-        String path = String.format("%d/%s/%s", preview.getUserId(), fileConfig.getPreviewPath(), dto.filename());
+        String path = String.format("%d/%s/%s", preview.getUserId(), fileConfig.getPreviewPath(), filename);
         FileDataDTO fileDataDTO = getFile(path);
 
         return new GetPreviewDTO(fileDataDTO.getData(), preview.getContentType());
@@ -241,14 +263,70 @@ public class FileService {
 
         validatePermission(preview, userId);
 
-        RemoveObjectArgs args = RemoveObjectArgs.builder()
-                .bucket(fileConfig.getBucket())
-                .object(String.format("%d/%s/%s", preview.getUserId(), fileConfig.getPreviewPath(), dto.filename()))
-                .build();
-
-        minioClient.removeObject(args);
+        deleteFile(userId, dto.filename().toString(), FileType.PREVIEW);
 
         previewEntityRepository.delete(preview);
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+            topics = "${topics.delete-data-video}",
+            errorHandler = "customKafkaErrorHandler",
+            containerFactory = "kafkaListenerContainerFactory")
+    public void handleDeleteVideo(DeleteDataVideoEvent event) {
+        log.info("Получено событие удаления видео {}", event);
+
+        Optional<VideoEntity> video = videoEntityRepository.findVideoEntityByBusinessId(event.getVideoId());
+
+        video.ifPresent(v -> {
+            log.info("Начало удаления файла видео...");
+            var status = deleteFile(event.getUserId(), event.getVideoId().toString(), FileType.VIDEO);
+            log.info("Завершение удаления видео с результатом {}", status);
+
+            videoEntityRepository.delete(v);
+
+            if (event.getPreviewId() != null && status.equals(DeleteStatus.SUCCESS)) {
+                Optional<PreviewEntity> preview = previewEntityRepository.findByFilename(event.getPreviewId());
+
+                preview.ifPresent(
+                    previewEntity -> {
+                        log.info("Начало удаления файла превью...");
+                        var statusPreview = deleteFile(event.getUserId(), event.getPreviewId().toString(), FileType.PREVIEW);
+                        log.info("Завершение удаления превью с результатом {}", statusPreview);
+
+                        if (statusPreview.equals(DeleteStatus.SUCCESS)) {
+                            previewEntityRepository.delete(previewEntity);
+                        }
+                    }
+                );
+            }
+        });
+
+        log.info("Окончание обработки события удаления видео {}", event);
+    }
+
+    private DeleteStatus deleteFile(Long userId, String filename, FileType type) {
+        RemoveObjectArgs args = RemoveObjectArgs.builder()
+                .bucket(fileConfig.getBucket())
+                .object(String.format("%d/%s/%s", userId,
+                        getPathByFileType(type), filename))
+                .build();
+
+        try {
+            minioClient.removeObject(args);
+        } catch (Exception exception) {
+            log.error("Удаление файла с типом {} произошло с ошибкой", type);
+
+            return DeleteStatus.ERROR;
+        }
+
+        return DeleteStatus.SUCCESS;
+    }
+
+    private String getPathByFileType(FileType type) {
+        return switch (type) {
+            case PREVIEW -> fileConfig.getPreviewPath();
+            case VIDEO -> fileConfig.getVideoPath();
+        };
     }
 
     public void updatePreview(UpdatePreviewDTO dto, Long userId, MultipartFile file) {
@@ -256,7 +334,7 @@ public class FileService {
 
         validatePermission(preview, userId);
 
-        PutObjectArgs args = createPutObjectArgsFromFile(file, userId, preview.getFilename());
+        PutObjectArgs args = createPutObjectArgsFromFile(file, userId, preview.getBusinessId());
 
         saveFileInMinio(args);
 
@@ -297,12 +375,12 @@ public class FileService {
 
     @Scheduled(fixedRateString = "${schedule.time-clean-files}")
     public void deleteMarkedFiles() {
-        executorService.submit(deleteFilesWorker::execute);
+        asyncService.excecuteTask(deleteFilesWorker::execute);
     }
 
     @Scheduled(fixedRateString = "${schedule.time-clean-images}")
     public void deleteMarkedImages() {
-        executorService.submit(deletePreviewWorker::execute);
+        asyncService.excecuteTask(deletePreviewWorker::execute);
     }
 
     private PutObjectArgs createPutObjectArgsFromFile(MultipartFile file, Long userId, UUID filename) {
@@ -319,14 +397,15 @@ public class FileService {
     }
 
     private PreviewEntity createPreviewEntity(Long length, Long userId,
-                                              String contentType, String originalFilename) {
+                                              String contentType, SavePreviewDTO dto) {
         PreviewEntity preview = new PreviewEntity();
 
         preview.setLength(length);
         preview.setUserId(userId);
         preview.setStatus(FileStatus.CONFIRMED);
         preview.setContentType(contentType);
-        preview.setOriginalFilename(originalFilename);
+        preview.setOriginalFilename(dto.originalFilename());
+        preview.setBusinessId(dto.filename());
 
         return preview;
     }
@@ -457,7 +536,8 @@ public class FileService {
 
     @KafkaListener(topics = "${topics.delete-file-request}",
                    groupId = "${kafka.group-id}",
-                   errorHandler = "customKafkaErrorHandler")
+                   errorHandler = "customKafkaErrorHandler",
+                   containerFactory = "kafkaListenerContainerFactory")
     @SneakyThrows
     public void deleteDirectory(String path) {
         log.info("Процесс удаления дериктории {}: начало процесса удаления директории.", path);
@@ -510,7 +590,7 @@ public class FileService {
     }
 
     private PreviewEntity getPreviewByFilename(UUID filename) {
-        return previewEntityRepository.findById(filename).orElseThrow(
+        return previewEntityRepository.findByFilename(filename).orElseThrow(
                 () -> new PreviewNotFoundByFilename(String.format("File not found by filename: %s", filename))
         );
     }
@@ -519,5 +599,29 @@ public class FileService {
         if (!preview.getUserId().equals(userId)) {
             throw new NoRightsException("You aren't creator of course!");
         }
+    }
+
+    @SneakyThrows
+    private void removeGarbageDataFromFile(UUID filename) {
+        VideoEntity file = videoEntityRepository.findById(filename).get();
+
+        log.info("Начало асинхронного удаления временной информации о видео");
+        Collection<PartFile> parts = file.getParts();
+
+        for (PartFile part : parts) {
+            RemoveObjectArgs args = RemoveObjectArgs.builder()
+                .bucket(fileConfig.getBucket())
+                .object(String.format("%d/%s/%s/%s", file.getUserId(),
+                fileConfig.getVideoPath(), file.getFilename(), part.getPartName()))
+                .build();
+
+            minioClient.removeObject(args);
+        }
+
+        transactionService.requiresNewTransaction(() -> {
+            partFileRepository.deleteByFileId(file.getFilename());
+        });
+
+        log.info("Окончание асинхронного удаления временной информации о видео");
     }
 }

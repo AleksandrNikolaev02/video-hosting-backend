@@ -40,9 +40,9 @@ public class KafkaErrorHandler implements KafkaListenerErrorHandler {
             log.error("Ошибка при работе с сервисом Minio!");
         }
 
-        customMetricService.incrementErrorMinioServiceMetric();
+        // customMetricService.incrementErrorMinioServiceMetric();
 
-        return mapper.serialize(createFileDataDTO());
+        return "";
     }
 
     private FileDataDTO createFileDataDTO() {

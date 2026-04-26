@@ -1,5 +1,7 @@
 package com.example.business.dto;
 
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +12,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PreviewDTO {
-    private Long previewId;
+    private UUID previewId;
     private String path;
 }

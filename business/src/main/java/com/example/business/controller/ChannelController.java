@@ -2,6 +2,7 @@ package com.example.business.controller;
 
 import com.example.business.dto.BlockedChannelDTO;
 import com.example.business.dto.ChangeOwnerDTO;
+import com.example.business.dto.ChannelDTO;
 import com.example.business.dto.CreateChannelDTO;
 import com.example.business.dto.GetAllRequestsDTO;
 import com.example.business.dto.GetBlockedChannelDTO;
@@ -48,6 +49,22 @@ public class ChannelController {
         channelService.createChannel(dto, userId);
 
         return ResponseEntity.status(201).build();
+    }
+
+    @GetMapping("/my")
+    @Operation(summary = "Проверить наличие канала пользователя")
+    public ResponseEntity<Boolean> checkExistsChannel(@RequestHeader("X-user-id") Long userId) {
+        return ResponseEntity.ok(channelService.checkExistsChannel(userId));
+    }
+
+    @GetMapping("/channel/{id}")
+    @Operation(summary = "Получить информацию о канале по id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Информация о канале получена!"),
+            @ApiResponse(responseCode = "404", description = "Channel with id {id} not found!")
+    })
+    public ResponseEntity<ChannelDTO> getChannelInfo(@PathVariable("id") Long channelId) {
+        return ResponseEntity.ok(channelService.getChannelInfo(channelId));
     }
 
     @PutMapping("/update")

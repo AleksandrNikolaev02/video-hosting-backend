@@ -17,5 +17,4 @@ public class ChannelDTO {
     private LocalDateTime createdAt;
     private Long authorId;
     private Integer countSubs;
-
 }

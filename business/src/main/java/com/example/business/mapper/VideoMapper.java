@@ -20,6 +20,10 @@ public interface VideoMapper {
                                 .collect(java.util.stream.Collectors.toSet()))
             """)
     @Mapping(target = "countViewing", expression = "java(video.getViewings().size())")
+    @Mapping(target = "userId", expression = "java(video.getCreator().getId())")
+    @Mapping(target = "channelId", expression = "java(video.getChannel().getId())")
+    @Mapping(target = "channelName", expression = "java(video.getChannel().getName())")
+    @Mapping(target = "subscribersCount", expression = "java(video.getChannel().getCountSubs())")
     GetVideoDTO getVideoDtoFromVideo(Video video);
 
     @Mapping(target = "status", source = "videoStatus")

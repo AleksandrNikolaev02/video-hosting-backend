@@ -14,7 +14,6 @@ public class ReactionFactory {
             like.setVideo(video);
         } else if (evaluateEntity instanceof Comment comment) {
             like.setComment(comment);
-
         }
 
         like.setUser(user);

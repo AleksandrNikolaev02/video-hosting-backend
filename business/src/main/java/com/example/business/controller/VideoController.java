@@ -14,6 +14,7 @@ import com.example.business.mapper.VideoMapper;
 import com.example.business.model.ElasticVideo;
 import com.example.business.service.SearchService;
 import com.example.business.service.VideoService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -71,7 +72,7 @@ public class VideoController {
                     content = @Content(schema = @Schema(implementation = String.class)))
     })
     public ResponseEntity<Void> deleteVideo(@RequestHeader("X-user-id") Long userId,
-                                            @RequestBody DeleteVideoDTO dto) {
+                                            @RequestBody DeleteVideoDTO dto) throws JsonProcessingException {
         videoService.deleteVideo(dto, userId);
 
         return ResponseEntity.ok().build();
@@ -125,6 +126,20 @@ public class VideoController {
                 .getContent().stream().map(videoMapper::getVideoDtoFromVideo).toList();
     }
 
+    @GetMapping("/get_videos_by_channel/{channel_id}")
+    public List<GetVideoDTO> getVideosByChannel(@PathVariable("channel_id") Long channelId,
+                                                          @PageableDefault Pageable pageable) {
+        return videoService.getVideosByChannel(channelId, pageable)
+                .getContent().stream().map(videoMapper::getVideoDtoFromVideo).toList();
+    }
+
+    @GetMapping("/get_video/{filename}")
+    public ResponseEntity<GetVideoDTO> getVideoByFilename(@PathVariable("filename") UUID filename) {
+        return ResponseEntity.ok(videoMapper.getVideoDtoFromVideo(
+                videoService.getVideoByFilename(filename)
+        ));
+    }
+
     @Operation(summary = "Получить лайки и дизлайки конкретного видео")
     @GetMapping(value = "/get_evaluates/{filename}")
     public ResponseEntity<GetEvaluatesVideoDTO> getEvaluates(@PathVariable("filename") UUID filename) {
@@ -161,5 +176,13 @@ public class VideoController {
                                 .toList());
                     }
                 }).toList();
+    }
+
+    @GetMapping(value = "/get_popular")
+    public List<GetVideoDTO> getPopularVideo(@RequestHeader(value = "X-user-id",
+                                             required = false) Long userId,
+                                             @PageableDefault Pageable pageable) {
+        return videoService.getPopularVideo(userId, pageable)
+                    .stream().map(videoMapper::getVideoDtoFromVideo).toList();
     }
 }

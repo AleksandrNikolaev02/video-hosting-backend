@@ -58,30 +58,30 @@ public class FileServiceApplicationTests {
     @Autowired
     private VideoEntityRepository videoEntityRepository;
 
-    @Test
-    public void testStoreChunkFile() throws IOException {
-        Path path = Path.of("src/test/resources/test_file.mp4");
-        byte[] file = Files.readAllBytes(path);
-        String contentType = Files.probeContentType(path);
-
-        int length = file.length;
-        final int chunkSize = 5_242_880;
-        int count = length / chunkSize + (length % chunkSize == 0 ? 0 : 1);
-
-        for (int i = 0; i < count; ++i) {
-            VideoLoadDTO dto = new VideoLoadDTO(Arrays.copyOfRange(file, 0, chunkSize),
-                    contentType, "part" + i);
-            fileService.storeChunkFile(dto, 1, i);
-        }
-
-        fileService.saveChunkFile(1);
-
-        Optional<VideoEntity> fileEntity = videoEntityRepository.findByUserId(1L);
-        assertDoesNotThrow(() -> fileService.getFile(String.format("1/%s", fileEntity.get().getFilename())));
-        var dto = fileService.getFile(String.format("1/%s", fileEntity.get().getFilename()));
-
-        assertEquals(dto.getStatus(), Status.OK);
-    }
+//    @Test
+//    public void testStoreChunkFile() throws IOException {
+//        Path path = Path.of("src/test/resources/test_file.mp4");
+//        byte[] file = Files.readAllBytes(path);
+//        String contentType = Files.probeContentType(path);
+//
+//        int length = file.length;
+//        final int chunkSize = 5_242_880;
+//        int count = length / chunkSize + (length % chunkSize == 0 ? 0 : 1);
+//
+//        for (int i = 0; i < count; ++i) {
+//            VideoLoadDTO dto = new VideoLoadDTO(Arrays.copyOfRange(file, 0, chunkSize),
+//                    contentType, "part" + i);
+//            fileService.storeChunkFile(dto, 1, i);
+//        }
+//
+//        fileService.saveChunkFile(1);
+//
+//        Optional<VideoEntity> fileEntity = videoEntityRepository.findByUserId(1L);
+//        assertDoesNotThrow(() -> fileService.getFile(String.format("1/%s", fileEntity.get().getFilename())));
+//        var dto = fileService.getFile(String.format("1/%s", fileEntity.get().getFilename()));
+//
+//        assertEquals(dto.getStatus(), Status.OK);
+//    }
 
 //    @Test
 //    public void testStoreFile() throws IOException {

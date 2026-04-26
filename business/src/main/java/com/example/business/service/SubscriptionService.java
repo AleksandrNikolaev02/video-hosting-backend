@@ -46,7 +46,7 @@ public class SubscriptionService {
         channelRepository.save(channel);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public void unsubscribe(UnsubscribeDTO dto, Long userId) {
         User subscriber = findEntityService.getUserById(userId);
         Channel channel = findEntityService.getChannelById(dto.channelId());
@@ -56,6 +56,8 @@ public class SubscriptionService {
         if (sub.isEmpty()) {
             throw new SubscriptionNotFoundException("Subscription not found in this channel!");
         }
+
+        channel.setCountSubs(channel.getCountSubs() - 1);
 
         subscriptionRepository.delete(sub.get());
     }

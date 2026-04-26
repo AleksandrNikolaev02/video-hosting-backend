@@ -1,5 +1,6 @@
 package com.example.business.service;
 
+import com.example.business.client.RecommenderServiceClient;
 import com.example.business.config.TopicConfig;
 import com.example.business.dto.BelongEvaluateDTO;
 import com.example.business.dto.CompensatingTransactionDTO;
@@ -8,6 +9,8 @@ import com.example.business.dto.DeleteVideoDTO;
 import com.example.business.dto.EvaluateVideoDTO;
 import com.example.business.dto.GetEvaluatesVideoDTO;
 import com.example.business.dto.KafkaDeleteChannelDTO;
+import com.example.business.dto.PopularVideoDTO;
+import com.example.business.dto.RecommenderDTO;
 import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
@@ -23,6 +26,7 @@ import com.example.business.model.Video;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
+import com.example.dto.DeleteDataVideoEvent;
 import com.example.dto.EmailRequestDTO;
 import com.example.dto.PostMessageDTO;
 import com.example.dto.StatusProcessChannel;
@@ -38,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -54,6 +59,7 @@ public class VideoService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final EvaluateService evaluateService;
     private final ExecutorService executorService;
+    private final RecommenderServiceClient client;
 
     @Transactional
     public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
@@ -89,7 +95,25 @@ public class VideoService {
         blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
+        DeleteDataVideoEvent event = new DeleteDataVideoEvent();
+        event.setUserId(userId);
+        event.setVideoId(video.getFilename());
+
+        if (video.getPreview() != null) {
+            event.setPreviewId(video.getPreview().getId());
+        }
+
         videoRepository.delete(video);
+
+        kafkaTemplate.send(topicConfig.getDeleteDataVideo(), event).whenComplete(
+                (result, exception) -> {
+                    if (exception == null) {
+                        log.info("Сообщение успешно отправлено в топик {}", topicConfig.getDeleteDataVideo());
+                    } else {
+                        log.error("Сообщение было отправлено с ошибкой", exception);
+                    }
+                }
+        );
     }
 
     @KafkaListener(groupId = "${kafka.group-id}",
@@ -142,9 +166,6 @@ public class VideoService {
         blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
-        // FIXME: а вот тут надо подумать...
-        // video.setFilename(dto.getFilename());
-
         videoRepository.save(video);
     }
 
@@ -167,6 +188,14 @@ public class VideoService {
 
     public Page<Video> getVideos(Long userId, Pageable pageable) {
         return videoRepository.findByCreatorOrderByFilename(userId, pageable);
+    }
+
+    public Page<Video> getVideosByChannel(Long channelId, Pageable pageable) {
+        return videoRepository.findByChannelAndUploadedStatus(channelId, pageable);
+    }
+
+    public Video getVideoByFilename(UUID filename) {
+        return findEntityService.getVideoById(filename);
     }
 
     @Transactional
@@ -200,6 +229,20 @@ public class VideoService {
         }
 
         return belongEvaluateDTO;
+    }
+
+    public List<Video> getPopularVideo(Long userId, Pageable pageable) {
+        List<UUID> ids;
+
+        if (userId == null) {
+            ids = videoRepository.
+                    getPopularVideo(pageable).map(PopularVideoDTO::getVideoId).toList();
+        } else {
+            ids = client.getRecommenderVideos(userId).stream()
+                    .map(RecommenderDTO::getVideoId).toList();
+        }
+
+        return videoRepository.findAllById(ids);
     }
 
     private void sendEmailsAllSubscribers(Channel channel, Video video) {

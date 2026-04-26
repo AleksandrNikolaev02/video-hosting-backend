@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="update-primary-key-in-previews-table" author="alex">
+        <addColumn tableName="previews">
+            <column name="new_id" type="UUID"/>
+        </addColumn>
+
+        <update tableName="previews">
+            <column name="new_id" valueComputed="gen_random_uuid()"/>
+        </update>
+
+        <addNotNullConstraint tableName="previews"
+                              columnName="new_id"
+                              columnDataType="UUID"/>
+
+        <dropPrimaryKey tableName="previews"/>
+
+        <addPrimaryKey tableName="previews"
+                       columnNames="new_id"
+                       constraintName="previews_pkey"/>
+
+        <dropColumn tableName="previews" columnName="id"/>
+
+        <renameColumn tableName="previews"
+                      oldColumnName="new_id"
+                      newColumnName="id"
+                      columnDataType="UUID"/>
+    </changeSet>
+
+</databaseChangeLog>

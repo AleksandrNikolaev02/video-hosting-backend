@@ -20,6 +20,7 @@
 		<module>auth-service</module>
 		<module>business</module>
 		<module>camunda-service</module>
+		<module>file_service</module>
 	</modules>
 
 	<properties>

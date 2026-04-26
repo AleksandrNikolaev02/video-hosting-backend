@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record CreateBasePreviewDTO(
-        @NotNull UUID filename
+        @NotNull UUID videoId
 ) {
 }

@@ -27,7 +27,10 @@ public class ElasticVideo {
     private String description;
     @Field(type = FieldType.Text, analyzer = "standard")
     private String name;
+    @Field(type = FieldType.Date)
     private LocalDateTime createdAt;
     @Field(type = FieldType.Text, analyzer = "standard")
     private List<String> names;
+    @Field(type = FieldType.Long, name = "user_id", analyzer = "standard")
+    private Long userId;
 }

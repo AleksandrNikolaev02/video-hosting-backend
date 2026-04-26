@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 @EnableFeignClients
 public class CamundaServiceApplication {
-	public static void main(String[] args) {
-		SpringApplication.run(CamundaServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(CamundaServiceApplication.class, args);
+    }
 }

@@ -19,8 +19,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Table(name = "viewings", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"userAgent", "ip"}),
-        @UniqueConstraint(columnNames = "userId")
+        @UniqueConstraint(columnNames = {"user_agent", "ip"}),
+        @UniqueConstraint(columnNames = "user_id")
 })
 public class Viewing {
     @Id

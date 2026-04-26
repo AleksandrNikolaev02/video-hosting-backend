@@ -1,27 +1,26 @@
 services:
-#  file-service:
-#    image: file-service
-#    build:
-#      context: ./file_service
-#      dockerfile: Dockerfile
-#    ports:
-#    - "8081:8081"
-#    environment:
-#      MINIO_ENDPOINT: http://minio:${MINIO_PORT:-9000}
-#      MINIO_PORT: ${MINIO_PORT:-9000}
-#      ACCESS_KEY: ${MINIO_ACCESS_KEY}
-#      SECRET_KEY: ${MINIO_SECRET_KEY}
+  file-service:
+    build:
+      context: ./file_service
+      dockerfile: Dockerfile
+    ports:
+    - "8081:8081"
+    environment:
+      MINIO_ENDPOINT: http://minio:${MINIO_PORT:-9000}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      SECRET_KEY: ${MINIO_SECRET_KEY}
 #      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_HOST}:${KAFKA_PORT}
 #      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_FILE}
 #      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
 #      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-#    depends_on:
-#      - db
-#      - minio
-#      - redis
-#      - kafka
-#    networks:
-#      - my-network
+    depends_on:
+      - db
+      - minio
+      - redis
+      - kafka
+    networks:
+      - my-network
 
 #  config-server:
 #    image: config-server
@@ -37,34 +36,31 @@ services:
 #    networks:
 #      - my-network
 
-#  eureka-server:
-#    image: eureka-server
-#    build:
-#      context: ./eureka-server
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8889:8889"
-#    networks:
-#      - my-network
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    ports:
+      - "8889:8889"
+    networks:
+      - my-network
 
-#  api-gateway:
-#    image: api-gateway
-#    build:
-#      context: ./api-gateway
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8084:8084"
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_AUTH}
-#      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-#      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-#    depends_on:
-#      - eureka-server
-#    networks:
-#      - my-network
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_AUTH}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - eureka-server
+    networks:
+      - my-network
 
 #  auth-service:
-#    image: auth-service
 #    build:
 #      context: ./auth-service
 #      dockerfile: Dockerfile
@@ -85,13 +81,12 @@ services:
 #    networks:
 #      - my-network
 
-#  app:
-#    image: app
-#    build:
-#      context: ./app
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8080:8080"
+  business:
+    build:
+      context: ./business
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
 #    environment:
 #      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_PROJECT}
 #      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -99,18 +94,18 @@ services:
 #      SPRING_REDIS_HOST: redis
 #      SPRING_REDIS_PORT: 6379
 #      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_HOST}:${KAFKA_PORT}
-#    depends_on:
-#      - db
-#      - minio
-#      - redis
-#      - kafka
-#    networks:
-#      - my-network
+    depends_on:
+      - db
+      - redis
+      - kafka
+      - elasticsearch
+      - logstash
+    networks:
+      - my-network
 
-#  email_service:
-#    image: email_service
+#  email-service:
 #    build:
-#      context: ./email_service
+#      context: ./email-service
 #      dockerfile: Dockerfile
 #    ports:
 #      - "8083:8083"
@@ -131,6 +126,20 @@ services:
 #    networks:
 #      - my-network
 
+#  camunda:
+#    build:
+#      context: ./camunda-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8086:8086"
+#    depends_on:
+#      - db
+#      - minio
+#      - redis
+#      - kafka
+#    networks:
+#      - my-network
+
   db:
     image: postgres:latest
     restart: always
@@ -141,7 +150,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       my-network:
@@ -153,10 +162,8 @@ services:
       - "${MINIO_PORT}:${MINIO_PORT}"
       - "9001:9001"
     environment:
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin1234
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -183,26 +190,32 @@ services:
       - KAFKA_ENABLE_KRAFT=yes
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_CONTROLLER_BROKER_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller, broker
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092, CONTROLLER://:9093
-      - KAFKA_CFG_LISTENERS_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093 # {id}@{host}:{port}, id = KAFKA_CFG_CONTROLLER_BROKER_ID
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+
+      # 👇 ВАЖНО
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
       - KAFKA_KRAFT_CLUSTER_ID=D-9LSBnqTSGU6k78YpctOw
+
     ports:
-      - '9092:9092'
-    volumes:
-      - kafka_data:/bitnami/kafka
+      - "9092:9092"
+      - "29092:29092"
+
     networks:
       my-network:
 
-  prometheus:
-    image: prom/prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#  prometheus:
+#    image: prom/prometheus
+#    ports:
+#      - "9090:9090"
+#    volumes:
+#      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
   elasticsearch:
     image: elasticsearch:8.18.1

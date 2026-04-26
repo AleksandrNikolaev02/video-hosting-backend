@@ -37,8 +37,6 @@ public class ViewingService {
             viewing.setIp(userIp);
         }
 
-        video.getViewings().add(viewing);
-
-        saveEntityService.save(video);
+        saveEntityService.save(viewing);
     }
 }

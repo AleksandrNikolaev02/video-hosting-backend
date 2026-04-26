@@ -26,5 +26,4 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
         DELETE FROM Playlist p WHERE p.channel.id = :channelId AND p.videos IS EMPTY
     """)
     void deleteEmptyPlaylistsByChannelId(@Param("channelId") Long channelId);
-
 }

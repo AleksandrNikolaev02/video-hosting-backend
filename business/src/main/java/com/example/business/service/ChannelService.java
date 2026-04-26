@@ -3,6 +3,7 @@ package com.example.business.service;
 import com.example.business.config.TopicConfig;
 import com.example.business.dto.BlockedChannelDTO;
 import com.example.business.dto.ChangeOwnerDTO;
+import com.example.business.dto.ChannelDTO;
 import com.example.business.dto.CreateChannelDTO;
 import com.example.business.dto.KafkaDeleteChannelDTO;
 import com.example.business.dto.SendRequestDTO;
@@ -13,6 +14,7 @@ import com.example.business.factory.BlockedChannelFactory;
 import com.example.business.factory.ChannelFactory;
 import com.example.business.factory.PostMessageFactory;
 import com.example.business.factory.RequestChannelFactory;
+import com.example.business.mapper.ChannelMapper;
 import com.example.business.model.BlockedChannel;
 import com.example.business.model.Channel;
 import com.example.business.model.RequestChannel;
@@ -40,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +65,7 @@ public class ChannelService {
     private final DeleteVideosWorker deleteVideosWorker;
     private final DeleteChannelsWorker deleteChannelsWorker;
     private final DeleteStatusValidator deleteStatusValidator;
+    private final ChannelMapper channelMapper;
 
     public void createChannel(CreateChannelDTO dto, Long userId) {
         User authorChannel = findEntityService.getUserById(userId);
@@ -71,6 +75,18 @@ public class ChannelService {
         Channel channel = ChannelFactory.create(authorChannel, dto);
 
         channelRepository.save(channel);
+    }
+
+    public boolean checkExistsChannel(Long userId) {
+        User user = findEntityService.getUserById(userId);
+
+        return !Objects.isNull(user.getChannel());
+    }
+
+    public ChannelDTO getChannelInfo(Long channelId) {
+        Channel channel = findEntityService.getChannelById(channelId);
+
+        return channelMapper.getChannelDtoFromChannel(channel);
     }
 
     public void updateDataChannel(UpdateChannelDTO dto, Long userId) {

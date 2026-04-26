@@ -8,7 +8,6 @@ import com.example.business.model.Video;
 public class VideoFactory {
     public static Video create(CreateBaseVideoDTO dto, User creator) {
         return Video.builder()
-                .filename(dto.filename())
                 .description(dto.description())
                 .name(dto.title())
                 .creator(creator)

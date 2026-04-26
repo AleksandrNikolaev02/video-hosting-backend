@@ -16,6 +16,7 @@ public class TopicConfig {
     private String deleteDataChannel;
     private String publishEventTopic;
     private String emailRequest;
+    private String deleteDataVideo;
 
     @Bean
     public NewTopic createDeleteDataChannelTopic() {

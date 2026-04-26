@@ -3,9 +3,9 @@ server:
 
 spring:
   application:
-    name: business
+    name: business-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/business
+    url: jdbc:postgresql://db:5432/business
     username: postgres
     password: 1234
     driver-class-name: org.postgresql.Driver
@@ -33,10 +33,10 @@ logging:
 
 kafka:
   group-id: file-service-group
-  bootstrap-server: localhost:9092
+  bootstrap-server: kafka:9092
 
 elasticsearch:
-  host: localhost
+  host: elasticsearch
   port: 9200
 
 # в секундах
@@ -59,6 +59,7 @@ topics:
   delete-data-channel: delete-data-channel
   publish-event-topic: publish-event
   email-request: email-request
+  delete-data-video: delete-data-video
 
 metrics:
   error-minio-service-metric: error_minio_service_metric

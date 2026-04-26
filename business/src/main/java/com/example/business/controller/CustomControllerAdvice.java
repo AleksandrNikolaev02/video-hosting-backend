@@ -8,6 +8,7 @@ import com.example.business.exception.CommentNotFoundException;
 import com.example.business.exception.PlaylistAlreadyDeletedException;
 import com.example.business.exception.PlaylistNotFoundException;
 import com.example.business.exception.RequestNotFoundException;
+import com.example.business.exception.ServiceUnavailableException;
 import com.example.business.exception.SubscribeAlreadyExistException;
 import com.example.business.exception.SubscriptionNotFoundException;
 import com.example.business.exception.UserNotCreateChannelException;
@@ -15,6 +16,7 @@ import com.example.business.exception.UserNotFoundException;
 import com.example.business.exception.VideoAlreadyDeletedException;
 import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -74,6 +76,15 @@ public class CustomControllerAdvice {
 
         log.error(exception.getMessage());
         return ResponseEntity.status(409).body(description);
+    }
+
+    @ExceptionHandler(value = JsonProcessingException.class)
+    public ResponseEntity<Map<String, String>> handle(JsonProcessingException exception) {
+        Map<String, String> description = new HashMap<>();
+        description.put("message", "Ошибка сериализации ДТО!");
+
+        log.error(exception.getMessage());
+        return ResponseEntity.status(400).body(description);
     }
 
     @ExceptionHandler(value = PlaylistNotFoundException.class)
@@ -152,5 +163,12 @@ public class CustomControllerAdvice {
         log.error(exception.getMessage());
 
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = ServiceUnavailableException.class)
+    public ResponseEntity<String> handle(ServiceUnavailableException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
     }
 }

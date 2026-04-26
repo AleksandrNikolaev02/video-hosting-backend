@@ -15,14 +15,14 @@ import lombok.Setter;
 @Setter
 public class FileEntity {
     @Column(name = "user_id")
-    private Long userId;
+    protected Long userId;
     @Column(name = "content_type")
-    private String contentType;
+    protected String contentType;
     @Column(name = "length")
-    private Long length;
+    protected Long length;
     @Column(name = "filename_orig")
-    private String originalFilename;
+    protected String originalFilename;
     @Enumerated(value = EnumType.STRING)
     @Column(name = "status")
-    private FileStatus status;
+    protected FileStatus status;
 }

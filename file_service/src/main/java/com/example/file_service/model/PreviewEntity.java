@@ -1,6 +1,7 @@
 package com.example.file_service.model;
 
 import com.example.file_service.util.UuidV7Generator;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -22,4 +23,6 @@ public class PreviewEntity extends FileEntity {
     @Id
     @UuidGenerator(algorithm = UuidV7Generator.class)
     private UUID filename;
+    @Column(name = "business_id")
+    private UUID businessId;
 }
