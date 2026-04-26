@@ -1,0 +1,154 @@
+package com.example.business.service;
+
+import com.example.business.config.TopicConfig;
+import com.example.business.dto.AddVideoInPlaylistDTO;
+import com.example.business.dto.CompensatingTransactionDTO;
+import com.example.business.dto.CreatePlaylistDTO;
+import com.example.business.dto.DeletePlaylistDTO;
+import com.example.business.dto.KafkaDeleteChannelDTO;
+import com.example.business.enums.ChannelStatus;
+import com.example.business.enums.PlaylistStatus;
+import com.example.business.exception.ChannelNotFoundException;
+import com.example.business.factory.PlaylistFactory;
+import com.example.business.model.Channel;
+import com.example.business.model.Playlist;
+import com.example.business.model.User;
+import com.example.business.model.Video;
+import com.example.business.repository.PlaylistRepository;
+import com.example.business.repository.VideoRepository;
+import com.example.business.validator.BlockedChannelValidator;
+import com.example.business.validator.DeleteStatusValidator;
+import com.example.business.validator.PermissionValidator;
+import com.example.dto.PostMessageDTO;
+import com.example.dto.StatusProcessChannel;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.TopicPartition;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class PlaylistService {
+    private final PlaylistRepository playlistRepository;
+    private final FindEntityService findEntityService;
+    private final PermissionValidator validator;
+    private final VideoRepository videoRepository;
+    private final BlockedChannelValidator blockedChannelValidator;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final TopicConfig topicConfig;
+    private final DeleteStatusValidator deleteStatusValidator;
+
+    public void createPlaylist(CreatePlaylistDTO dto, Long userId) {
+        User user = findEntityService.getUserById(userId);
+
+        Channel channel = user.getChannel();
+        if (channel == null) {
+            throw new ChannelNotFoundException("User have not already had a channel!");
+        }
+
+        deleteStatusValidator.validate(channel);
+
+        blockedChannelValidator.validate(channel);
+
+        Playlist playlist = PlaylistFactory.create(user, dto.name());
+
+        playlistRepository.save(playlist);
+    }
+
+    public void addVideoInPlaylist(AddVideoInPlaylistDTO dto, Long userId) {
+        Playlist playlist = findEntityService.getPlaylistById(dto.playlistId());
+        Channel channel = playlist.getChannel();
+
+        deleteStatusValidator.validate(channel);
+        blockedChannelValidator.validate(channel);
+        validator.validatePlaylistCreator(playlist, userId);
+
+        Video video = findEntityService.getVideoById(dto.filename());
+
+        playlist.getVideos().add(video);
+        video.setPlaylist(playlist);
+
+        playlistRepository.save(playlist);
+    }
+
+    public Page<Playlist> getAllPlaylistsByUser(Long userId, Pageable pageable) {
+        User user = findEntityService.getUserById(userId);
+
+        return playlistRepository.findAllPlaylistByUserIdBesidesDeleted(user.getId(), pageable);
+    }
+
+    public Page<Video> getAllVideoFromPlaylist(Long userId, Pageable pageable, Long playlistId) {
+        Playlist playlist = findEntityService.getPlaylistById(playlistId);
+
+        deleteStatusValidator.validate(playlist);
+        validator.validatePlaylistCreator(playlist, userId);
+
+        return videoRepository.findAllVideoByPlaylistBesidesDeleted(playlist.getId(), pageable);
+    }
+
+    @Transactional
+    public void deletePlaylist(Long userId, DeletePlaylistDTO dto) {
+        Playlist playlist = findEntityService.getPlaylistById(dto.playlistId());
+
+        blockedChannelValidator.validate(playlist.getChannel());
+        validator.validatePlaylistCreator(playlist, userId);
+
+        deleteLinkFromVideosOfPlaylist(playlist);
+
+        playlistRepository.delete(playlist);
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+            topicPartitions = @TopicPartition(
+                    topic = "${topics.delete-data-channel}",
+                    partitions = "1"
+            ),
+            containerFactory = "factoryKafkaDeleteChannelDTO"
+    )
+    @Transactional
+    public void handleDeleteDataChannel(KafkaDeleteChannelDTO dto) {
+        StatusProcessChannel status = StatusProcessChannel.DATA_SUCCESS;
+        try {
+            log.info("Начало выполнения смены статусов у плейлистов...");
+            Channel channel = findEntityService.getChannelById(dto.channelId());
+            channel.getPlaylists().forEach(playlist -> playlist.setStatus(PlaylistStatus.DELETED));
+            log.info("Смена статусов у плейлистов завершилась успешно!");
+        } catch (Exception e) {
+            status = StatusProcessChannel.DATA_FAILURE;
+
+            log.error("Ошибка при удалении видео с канала с id: {}", dto.channelId());
+
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        } finally {
+            PostMessageDTO message = new PostMessageDTO(status, dto.pipelineKey());
+            kafkaTemplate.send(topicConfig.getPublishEventTopic(), message);
+            log.info("Отправлено сообщение в Camunda");
+        }
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+                   topicPartitions = @TopicPartition(
+                           topic = "${topics.compensating-transaction-business-service}",
+                           partitions = "1"
+                   ),
+            containerFactory = "factoryCompensatingTransactionDTO"
+    )
+    public void compensatingTransactional(CompensatingTransactionDTO dto) {
+        Channel channel = findEntityService.getUserById(dto.userId()).getChannel();
+        channel.setStatus(ChannelStatus.ACTIVE);
+
+        channel.getPlaylists().forEach(playlist -> playlist.setStatus(PlaylistStatus.ACTIVE));
+    }
+
+    private void deleteLinkFromVideosOfPlaylist(Playlist playlist) {
+        playlist.getVideos().forEach(video -> video.setPlaylist(null));
+    }
+}

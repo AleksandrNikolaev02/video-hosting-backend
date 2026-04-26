@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -77,6 +79,7 @@ public class FileController {
         return ResponseEntity.ok("File was compare and save!");
     }
 
+    @Deprecated
     @Operation(summary = "Сгенерировать уникальный ключ для файла")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
@@ -123,9 +126,9 @@ public class FileController {
                          implementation = RequestGetPreviewDTO.class))),
             @ApiResponse(responseCode = "404", description = "File not found by filename: <filename>")
     })
-    @PostMapping(value = "/get_preview")
-    public ResponseEntity<byte[]> getPreview(@Validated @RequestBody RequestGetPreviewDTO dto) {
-        GetPreviewDTO getPreviewDTO = fileService.getPreview(dto);
+    @GetMapping(value = "/get_preview/{filename}")
+    public ResponseEntity<byte[]> getPreview(@PathVariable("filename") UUID filename) {
+        GetPreviewDTO getPreviewDTO = fileService.getPreview(filename);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(getPreviewDTO.contentType()))
@@ -165,7 +168,7 @@ public class FileController {
     })
     @GetMapping(value = "/file_chunk")
     public ResponseEntity<byte[]> getFileChunk(@RequestParam("user_id") Long userId,
-                                               @RequestParam("filename") String filename,
+                                               @RequestParam("filename") UUID filename,
                                                @RequestHeader(value = "Range", required = false) String rangeHeader) {
         ChunkFileDTO chunk = fileService.getChunkFile(filename, userId, rangeHeader);
 
@@ -176,5 +179,13 @@ public class FileController {
                         chunk.end(), chunk.fileLength()))
                 .contentLength(chunk.end() - chunk.start() + 1)
                 .body(chunk.data());
+    }
+
+    @DeleteMapping("/channel/delete")
+    public ResponseEntity<Void> deleteChannel(@RequestHeader("X-user-id") Long userId,
+                                              @RequestHeader("X-pipeline-key") String pipelineKey) {
+        fileService.deleteChannel(userId, pipelineKey);
+
+        return ResponseEntity.ok().build();
     }
 }

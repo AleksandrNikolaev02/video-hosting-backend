@@ -1,16 +1,20 @@
 package com.example.business.service;
 
 import com.example.business.dto.TagDTO;
-import com.example.business.mapper.TagMapper;
 import com.example.business.model.Tag;
 import com.example.business.model.Video;
 import com.example.business.repository.TagRepository;
 import com.example.business.repository.VideoRepository;
 import com.example.business.validator.PermissionValidator;
 import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.LinkedHashSet;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @AllArgsConstructor
@@ -20,29 +24,52 @@ public class TagService {
     private final VideoRepository videoRepository;
     private final TagRepository tagRepository;
 
+    @Transactional
     public void addTags(TagDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         permissionValidator.validateCreatorOfVideo(video, userId);
 
-        List<Tag> tags = dto.names()
-                .stream()
-                .map(name -> tagRepository.findByName(name)
-                        .orElseGet(() -> tagRepository.save(new Tag(name))))
-                .toList();
+        Set<Tag> videoTags = video.getTags();
 
-        video.getTags().addAll(tags);
+        Set<String> uniqueNames = new LinkedHashSet<>();
+        for (String name : dto.names()) {
+            if (name != null && !name.isBlank()) {
+                uniqueNames.add(name.trim());
+            }
+        }
+
+        for (String name : uniqueNames) {
+            videoTags.add(getOrCreateTag(name));
+        }
+
+        video.setTags(videoTags);
 
         videoRepository.save(video);
     }
 
+    @Transactional
     public void deleteTags(TagDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.videoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         video.getTags().removeIf(tag -> dto.names().contains(tag.getName()));
 
         videoRepository.save(video);
+    }
+
+    private Tag getOrCreateTag(String name) {
+        Optional<Tag> existingTag = tagRepository.findByName(name);
+        if (existingTag.isPresent()) {
+            return existingTag.get();
+        }
+
+        try {
+            return tagRepository.saveAndFlush(new Tag(name));
+        } catch (DataIntegrityViolationException e) {
+            return tagRepository.findByName(name)
+                    .orElseThrow(() -> e);
+        }
     }
 }

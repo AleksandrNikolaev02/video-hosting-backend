@@ -1,12 +1,12 @@
 package com.example.business.dto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
 import java.util.List;
+import java.util.UUID;
 
 public record TagDTO(
         List<String> names,
-        @Positive @NotNull Long videoId
+        @NotNull UUID filename
 ) {
 }

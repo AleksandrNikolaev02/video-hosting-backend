@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface VideoMapper {
     @Mapping(target = "title", source = "name")
-    @Mapping(target = "dto", expression = """
+    @Mapping(target = "video_preview", expression = """
             java(video.getPreview() != null ? (new com.example.business.dto.PreviewDTO(
                                          video.getPreview().getId(),
                                          video.getPreview().getPath())) : null)
@@ -19,6 +19,11 @@ public interface VideoMapper {
                                 .map(com.example.business.model.Tag::getName)
                                 .collect(java.util.stream.Collectors.toSet()))
             """)
+    @Mapping(target = "countViewing", expression = "java(video.getViewings().size())")
+    @Mapping(target = "userId", expression = "java(video.getCreator().getId())")
+    @Mapping(target = "channelId", expression = "java(video.getChannel().getId())")
+    @Mapping(target = "channelName", expression = "java(video.getChannel().getName())")
+    @Mapping(target = "subscribersCount", expression = "java(video.getChannel().getCountSubs())")
     GetVideoDTO getVideoDtoFromVideo(Video video);
 
     @Mapping(target = "status", source = "videoStatus")

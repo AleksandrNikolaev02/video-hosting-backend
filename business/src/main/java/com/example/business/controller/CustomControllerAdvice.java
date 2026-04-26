@@ -1,8 +1,22 @@
 package com.example.business.controller;
 
+import com.example.business.exception.ChannelAlreadyDeletedException;
+import com.example.business.exception.ChannelAlreadyExistsException;
+import com.example.business.exception.ChannelBlockedException;
+import com.example.business.exception.ChannelNotFoundException;
+import com.example.business.exception.CommentNotFoundException;
+import com.example.business.exception.PlaylistAlreadyDeletedException;
+import com.example.business.exception.PlaylistNotFoundException;
+import com.example.business.exception.RequestNotFoundException;
+import com.example.business.exception.ServiceUnavailableException;
+import com.example.business.exception.SubscribeAlreadyExistException;
+import com.example.business.exception.SubscriptionNotFoundException;
+import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.exception.UserNotFoundException;
+import com.example.business.exception.VideoAlreadyDeletedException;
 import com.example.business.exception.VideoAlreadyEvaluateException;
 import com.example.business.exception.VideoNotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import dev.alex.auth.starter.auth_spring_boot_starter.exception.NoRightsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -62,5 +76,99 @@ public class CustomControllerAdvice {
 
         log.error(exception.getMessage());
         return ResponseEntity.status(409).body(description);
+    }
+
+    @ExceptionHandler(value = JsonProcessingException.class)
+    public ResponseEntity<Map<String, String>> handle(JsonProcessingException exception) {
+        Map<String, String> description = new HashMap<>();
+        description.put("message", "Ошибка сериализации ДТО!");
+
+        log.error(exception.getMessage());
+        return ResponseEntity.status(400).body(description);
+    }
+
+    @ExceptionHandler(value = PlaylistNotFoundException.class)
+    public ResponseEntity<String> handle(PlaylistNotFoundException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = ChannelAlreadyExistsException.class)
+    public ResponseEntity<String> handle(ChannelAlreadyExistsException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(value = UserNotCreateChannelException.class)
+    public ResponseEntity<String> handle(UserNotCreateChannelException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = ChannelNotFoundException.class)
+    public ResponseEntity<String> handle(ChannelNotFoundException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = RequestNotFoundException.class)
+    public ResponseEntity<String> handle(RequestNotFoundException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = ChannelBlockedException.class)
+    public ResponseEntity<String> handle(ChannelBlockedException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(value = ChannelAlreadyDeletedException.class)
+    public ResponseEntity<String> handle(ChannelAlreadyDeletedException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = PlaylistAlreadyDeletedException.class)
+    public ResponseEntity<String> handle(PlaylistAlreadyDeletedException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = VideoAlreadyDeletedException.class)
+    public ResponseEntity<String> handle(VideoAlreadyDeletedException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = CommentNotFoundException.class)
+    public ResponseEntity<String> handle(CommentNotFoundException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = SubscribeAlreadyExistException.class)
+    public ResponseEntity<String> handle(SubscribeAlreadyExistException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = SubscriptionNotFoundException.class)
+    public ResponseEntity<String> handle(SubscriptionNotFoundException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = ServiceUnavailableException.class)
+    public ResponseEntity<String> handle(ServiceUnavailableException exception) {
+        log.error(exception.getMessage());
+
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
     }
 }

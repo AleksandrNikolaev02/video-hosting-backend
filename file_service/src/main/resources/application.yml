@@ -1,16 +1,17 @@
 server:
   port: 8081
-  address: 0.0.0.0
   tomcat:
     max-http-form-post-size: 10MB
 
 spring:
+  application:
+    name: file-service
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
   datasource:
-    url: jdbc:postgresql://localhost:5432/file
+    url: jdbc:postgresql://db:5432/file
     username: postgres
     password: 1234
     driver-class-name: org.postgresql.Driver
@@ -24,7 +25,7 @@ spring:
   data:
     redis:
       port: 6379
-      host: localhost
+      host: redis
 
 file:
   dir: uploads
@@ -33,20 +34,20 @@ file:
   video-path: videos
 minio:
   server:
-    url: http://localhost:9000
-    access_key: 12345
-    secret_key: admin12345
+    url: http://minio:9000
+    access_key: admin
+    secret_key: admin1234
     port: 9000
 
 kafka:
   group-id: file-service-group
-  bootstrap-server: localhost:9092
+  bootstrap-server: kafka:9092
 
 logging:
   level:
     org.springframework: INFO
     org.apache.kafka: INFO
-    org.springframework.kafka: INFO
+    org.springframework.kafka: DEBUG
     com.netflix.discovery: INFO
     org.springframework.cloud.netflix.eureka: WARN
     org.apache.hc.client5.http: WARN
@@ -60,6 +61,12 @@ topics:
   file-answers: file-answers
   file-responses: file-responses
   create-video: create-video-in-db
+  publish-event-topic: publish-event
+  delete-data-video: delete-data-video
+
+schedule:
+  time-clean-files: 30000
+  time-clean-images: 30000
 
 metrics:
   error-minio-service-metric: error_minio_service_metric

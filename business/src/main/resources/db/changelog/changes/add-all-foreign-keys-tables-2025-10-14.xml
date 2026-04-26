@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="add-all-foreign-keys-tables" author="alex">
+        <addForeignKeyConstraint baseTableName="previews" baseColumnNames="video_id"
+                                 constraintName="fk_preview_to_video"
+                                 referencedTableName="videos"
+                                 referencedColumnNames="filename"/>
+
+        <addForeignKeyConstraint baseTableName="reactions" baseColumnNames="video_id"
+                                 constraintName="fk_reactions_videos"
+                                 referencedTableName="videos"
+                                 referencedColumnNames="filename"/>
+
+        <addForeignKeyConstraint baseTableName="reactions" baseColumnNames="user_id"
+                                 constraintName="fk_reactions_users"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="videos" baseColumnNames="user_id"
+                                 constraintName="fk_videos"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="videos" baseColumnNames="playlist_id"
+                                 constraintName="fk_videos_to_playlists"
+                                 referencedTableName="playlists"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="viewings" baseColumnNames="video_id"
+                                 constraintName="fk_viewings_to_videos"
+                                 referencedTableName="videos"
+                                 referencedColumnNames="filename"/>
+
+        <addForeignKeyConstraint baseTableName="videos_tags" baseColumnNames="tag_id"
+                                 constraintName="fk_videos_tags_to_tags"
+                                 referencedTableName="tags"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="videos_tags" baseColumnNames="video_id"
+                                 constraintName="fk_videos_tags_to_videos"
+                                 referencedTableName="videos"
+                                 referencedColumnNames="filename"/>
+
+        <addForeignKeyConstraint baseTableName="playlists" baseColumnNames="owner_id"
+                                 constraintName="fk_playlists_to_owner"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+    </changeSet>
+
+</databaseChangeLog>

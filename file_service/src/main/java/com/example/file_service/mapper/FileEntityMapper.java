@@ -8,12 +8,11 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface FileEntityMapper {
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "filename", source = "filename")
+    @Mapping(target = "id", source = "filename")
     @Mapping(target = "contentType", source = "contentType")
     FileEntityDTO getFileEntityDTOFromFileEntity(VideoEntity file);
 
-    @Mapping(target = "path", expression = "java(video.getFilename())")
+    @Mapping(target = "filename", expression = "java(video.getFilename())")
     @Mapping(target = "userId", expression = "java(video.getUserId())")
     CreateVideoDTO getCreateVideoDtoFromVideoEntity(VideoEntity video);
 }

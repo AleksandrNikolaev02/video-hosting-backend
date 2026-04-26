@@ -12,4 +12,10 @@
     <include file="db/changelog/changes/create-images-sequence-2025-09-30.xml"/>
     <include file="db/changelog/changes/create-images-table-2025-09-30.xml"/>
     <include file="db/changelog/changes/add-column-filename_orig-in-images-table-2025-10-06.xml"/>
+    <include file="db/changelog/changes/change-files-table-2025-10-14.xml"/>
+    <include file="db/changelog/changes/add-primary-key-to-files-table-2025-10-14.xml"/>
+    <include file="db/changelog/changes/change-images-table-2025-10-14.xml"/>
+    <include file="db/changelog/changes/add-status-column-to-files-2025-10-20.xml"/>
+    <include file="db/changelog/changes/add-business-id-to-videos-table.xml"/>
+    <include file="db/changelog/changes/add-business-id-to-images-table.xml"/>
 </databaseChangeLog>

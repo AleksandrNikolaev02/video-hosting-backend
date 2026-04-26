@@ -1,15 +1,17 @@
 package com.example.file_service.model;
 
+import com.example.file_service.util.UuidV7Generator;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "images")
@@ -19,9 +21,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PreviewEntity extends FileEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "images-id-generator")
-    @SequenceGenerator(name = "images-id-generator",
-                       sequenceName = "images-id-generator",
-                       allocationSize = 10)
-    private Long id;
+    @UuidGenerator(algorithm = UuidV7Generator.class)
+    private UUID filename;
+    @Column(name = "business_id")
+    private UUID businessId;
 }

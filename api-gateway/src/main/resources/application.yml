@@ -18,10 +18,15 @@ eureka:
   instance:
     prefer-ip-address: true
 
+frontend:
+  url: "http://localhost:5173/"
+
 app:
   service-name:
     app-service: APP-SERVICE
     auth-service: AUTH-SERVICE
+    file-service: FILE-SERVICE
+    business-service: BUSINESS-SERVICE
   web-client:
     base-url: "http://auth-service:8085"
 

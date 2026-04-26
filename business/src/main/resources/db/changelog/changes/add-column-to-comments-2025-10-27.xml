@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="add-column-to-comments" author="alex">
+        <addColumn tableName="comments">
+            <column name="is_edit" type="boolean"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="comments" columnName="is_edit"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

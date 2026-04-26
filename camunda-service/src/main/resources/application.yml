@@ -1,0 +1,39 @@
+server:
+  port: 9201
+
+spring:
+  application:
+    name: camunda-service
+
+tasks:
+  instance-key: test_bpmn
+  business-key: process
+
+kafka:
+  bootstrap-server: localhost:9092
+  group-id: file-service-group
+
+topics:
+  publish-event-topic: publish-event
+  compensating-transaction-business-service: compensating-transaction-business-service
+  compensating-transaction-file-service: compensating-transaction-file-service
+
+params:
+  user-id: X-user-id
+  user-role: X-user-role
+  name-pipeline-key: pipeline-key
+  name-channel-id: channel-id
+  success-delete-data: success-delete-data
+  count-success-request-name: count-success-request
+  count-success-request: 2
+
+camunda:
+  bpm:
+    deployment-resource-pattern: classpath*:/processes/*.bpmn
+    admin-user:
+      id: camunda
+      password: admin
+    job-execution:
+      enabled: true
+      deployment-aware: true
+      max-jobs-per-acquisition: 5

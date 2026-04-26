@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="add-foreign-keys-for-table-video-playlist" author="alex">
+        <addForeignKeyConstraint baseTableName="channels" baseColumnNames="author_id"
+                                 constraintName="fk_channels_to_users"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="videos" baseColumnNames="channel_id"
+                                 constraintName="fk_videos_channels"
+                                 referencedTableName="channels"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="playlists" baseColumnNames="channel_id"
+                                 constraintName="fk_playlists_channels"
+                                 referencedTableName="channels"
+                                 referencedColumnNames="id"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="playlists" constraintName="fk_playlists_channels"/>
+            <dropForeignKeyConstraint baseTableName="videos" constraintName="fk_videos_channels"/>
+            <dropForeignKeyConstraint baseTableName="channels" constraintName="fk_channels_to_users"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

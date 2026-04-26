@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="change-primary-key-videos-table" author="alex">
+        <dropAllForeignKeyConstraints baseTableName="videos"/>
+        <dropAllForeignKeyConstraints baseTableName="videos_tags"/>
+        <dropAllForeignKeyConstraints baseTableName="viewings"/>
+        <dropAllForeignKeyConstraints baseTableName="playlists"/>
+        <dropAllForeignKeyConstraints baseTableName="tags"/>
+        <dropAllForeignKeyConstraints baseTableName="reactions"/>
+        <dropAllForeignKeyConstraints baseTableName="users"/>
+        <dropAllForeignKeyConstraints baseTableName="previews"/>
+
+        <dropPrimaryKey tableName="videos" constraintName="videos_pkey"/>
+        <dropColumn tableName="videos" columnName="id"/>
+        <renameColumn tableName="videos" oldColumnName="path" newColumnName="filename"/>
+        <modifyDataType tableName="videos" columnName="filename" newDataType="uuid"/>
+
+        <addPrimaryKey tableName="videos" columnNames="filename"/>
+    </changeSet>
+
+</databaseChangeLog>

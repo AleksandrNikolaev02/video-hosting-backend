@@ -1,6 +1,9 @@
 package com.example.file_service.model;
 
+import com.example.file_service.enums.FileStatus;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,13 +15,14 @@ import lombok.Setter;
 @Setter
 public class FileEntity {
     @Column(name = "user_id")
-    private Long userId;
-    @Column(name = "filename")
-    private String filename;
+    protected Long userId;
     @Column(name = "content_type")
-    private String contentType;
+    protected String contentType;
     @Column(name = "length")
-    private Long length;
+    protected Long length;
     @Column(name = "filename_orig")
-    private String originalFilename;
+    protected String originalFilename;
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "status")
+    protected FileStatus status;
 }

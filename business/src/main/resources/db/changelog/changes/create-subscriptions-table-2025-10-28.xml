@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="create-subscriptions-table" author="alex">
+        <createTable tableName="subscriptions">
+            <column name="id" type="java.lang.Long">
+                <constraints primaryKey="true" nullable="false" unique="true"/>
+            </column>
+            <column name="channel_id" type="java.lang.Long"/>
+            <column name="subscriber_id" type="java.lang.Long"/>
+            <column name="created_at" type="datetime"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="subscriptions" baseColumnNames="channel_id"
+                                 constraintName="fk_subscriptions_channels"
+                                 referencedTableName="channels"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="subscriptions" baseColumnNames="subscriber_id"
+                                 constraintName="fk_subscriptions_users"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="subscriptions"/>
+            <dropColumn tableName="subscriptions"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,163 +1,219 @@
 package com.example.business.service;
 
+import com.example.business.client.RecommenderServiceClient;
+import com.example.business.config.TopicConfig;
 import com.example.business.dto.BelongEvaluateDTO;
+import com.example.business.dto.CompensatingTransactionDTO;
 import com.example.business.dto.CreateBaseVideoDTO;
+import com.example.business.dto.DeleteVideoDTO;
 import com.example.business.dto.EvaluateVideoDTO;
 import com.example.business.dto.GetEvaluatesVideoDTO;
+import com.example.business.dto.KafkaDeleteChannelDTO;
+import com.example.business.dto.PopularVideoDTO;
+import com.example.business.dto.RecommenderDTO;
 import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
+import com.example.business.enums.ChannelStatus;
 import com.example.business.enums.VideoStatus;
-import com.example.business.exception.UserNotFoundException;
-import com.example.business.exception.VideoNotFoundException;
-import com.example.business.factory.ReactionFactory;
+import com.example.business.exception.UserNotCreateChannelException;
+import com.example.business.factory.VideoFactory;
+import com.example.business.model.Channel;
 import com.example.business.model.Dislike;
 import com.example.business.model.Like;
 import com.example.business.model.User;
 import com.example.business.model.Video;
-import com.example.business.repository.UserRepository;
 import com.example.business.repository.VideoRepository;
+import com.example.business.validator.BlockedChannelValidator;
 import com.example.business.validator.PermissionValidator;
-import com.example.dto.CreateVideoDTO;
+import com.example.dto.DeleteDataVideoEvent;
+import com.example.dto.EmailRequestDTO;
+import com.example.dto.PostMessageDTO;
+import com.example.dto.StatusProcessChannel;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.TopicPartition;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class VideoService {
+    private final TopicConfig topicConfig;
     private final VideoRepository videoRepository;
-    private final UserRepository userRepository;
     private final FindEntityService findEntityService;
     private final PermissionValidator permissionValidator;
+    private final BlockedChannelValidator blockedChannelValidator;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final EvaluateService evaluateService;
+    private final ExecutorService executorService;
+    private final RecommenderServiceClient client;
 
-    @KafkaListener(topics = "${topics.create-video}",
-                   groupId = "${kafka.group-id}",
-                   errorHandler = "createVideoHandler")
-    public void createVideo(CreateVideoDTO dto) {
-        User creator = getUserById(dto.getUserId());
+    @Transactional
+    public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
+        Video video = findEntityService.getVideoById(filename);
 
-        Video video = new Video();
-        video.setPath(dto.getPath());
-        video.setCreator(creator);
-
-        videoRepository.save(video);
-    }
-
-    public void updateVideo(UpdateVideoDTO dto, String path, Long userId) {
-        Video video = getVideoByPath(path);
-
+        blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
         Optional.ofNullable(dto.description()).ifPresent(video::setDescription);
         Optional.ofNullable(dto.title()).ifPresent(video::setName);
-
-        videoRepository.save(video);
     }
 
     public Video createVideo(CreateBaseVideoDTO dto, Long userId) {
-        User creator = getUserById(userId);
+        User creator = findEntityService.getUserById(userId);
 
-        Video video = new Video();
-        video.setDescription(dto.getDescription());
-        video.setName(dto.getTitle());
-        video.setCreator(creator);
-        video.setVideoStatus(VideoStatus.DRAFT);
+        blockedChannelValidator.validate(creator.getChannel());
 
-        return videoRepository.save(video);
+        if (creator.getChannel() == null) {
+            throw new UserNotCreateChannelException("User does not create channel yet!");
+        }
+
+        Video video = VideoFactory.create(dto, creator);
+
+        videoRepository.save(video);
+
+        return video;
+    }
+
+    @Transactional
+    public void deleteVideo(DeleteVideoDTO dto, Long userId) {
+        Video video = findEntityService.getVideoById(dto.filename());
+
+        blockedChannelValidator.validate(video.getChannel());
+        permissionValidator.validateCreatorOfVideo(video, userId);
+
+        DeleteDataVideoEvent event = new DeleteDataVideoEvent();
+        event.setUserId(userId);
+        event.setVideoId(video.getFilename());
+
+        if (video.getPreview() != null) {
+            event.setPreviewId(video.getPreview().getId());
+        }
+
+        videoRepository.delete(video);
+
+        kafkaTemplate.send(topicConfig.getDeleteDataVideo(), event).whenComplete(
+                (result, exception) -> {
+                    if (exception == null) {
+                        log.info("Сообщение успешно отправлено в топик {}", topicConfig.getDeleteDataVideo());
+                    } else {
+                        log.error("Сообщение было отправлено с ошибкой", exception);
+                    }
+                }
+        );
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+                   topicPartitions = @TopicPartition(
+                        topic = "${topics.delete-data-channel}",
+                        partitions = "0"
+                   ),
+            containerFactory = "factoryKafkaDeleteChannelDTO"
+    )
+    @Transactional
+    public void handleDeleteDataChannel(KafkaDeleteChannelDTO dto) {
+        StatusProcessChannel status = StatusProcessChannel.DATA_SUCCESS;
+        try {
+            log.info("Начало выполнения смены статусов у видео...");
+
+            Channel channel = findEntityService.getChannelById(dto.channelId());
+            channel.getVideos().forEach(video -> video.setVideoStatus(VideoStatus.DELETED));
+
+            log.info("Смена статусов у видео завершилась успешно!");
+        } catch (Exception e) {
+            status = StatusProcessChannel.DATA_FAILURE;
+
+            log.error("Ошибка при удалении видео с канала с id: {}", dto.channelId());
+
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        } finally {
+            PostMessageDTO message = new PostMessageDTO(status, dto.pipelineKey());
+            kafkaTemplate.send(topicConfig.getPublishEventTopic(), message);
+            log.info("Отправлено сообщение в Camunda");
+        }
+    }
+
+    @KafkaListener(groupId = "${kafka.group-id}",
+            topicPartitions = @TopicPartition(
+                    topic = "${topics.compensating-transaction-business-service}",
+                    partitions = "0"
+            ),
+            containerFactory = "factoryCompensatingTransactionDTO"
+    )
+    public void compensatingTransactional(CompensatingTransactionDTO dto) {
+        Channel channel = findEntityService.getUserById(dto.userId()).getChannel();
+        channel.setStatus(ChannelStatus.ACTIVE);
+
+        channel.getVideos().forEach(video -> video.setVideoStatus(VideoStatus.UPLOADED));
     }
 
     public void updateVideoPath(UpdatePathVideoDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.filename());
 
+        blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
-
-        video.setPath(dto.getPath());
 
         videoRepository.save(video);
     }
 
-    public void postVideo(String filename, Long userId) {
-        Video video = getVideoByPath(filename);
+    public void postVideo(UUID filename, Long userId) {
+        Video video = findEntityService.getVideoById(filename);
 
+        blockedChannelValidator.validate(video.getChannel());
         permissionValidator.validateCreatorOfVideo(video, userId);
 
+        Channel channel = findEntityService.getChannelByCreator(video.getCreator());
+
         video.setVideoStatus(VideoStatus.UPLOADED);
+        video.setChannel(channel);
         video.setDate(LocalDateTime.now());
+
+        sendEmailsAllSubscribers(channel, video);
 
         videoRepository.save(video);
     }
 
     public Page<Video> getVideos(Long userId, Pageable pageable) {
-        return videoRepository.findAllVideoByUserId(userId, pageable);
+        return videoRepository.findByCreatorOrderByFilename(userId, pageable);
+    }
+
+    public Page<Video> getVideosByChannel(Long channelId, Pageable pageable) {
+        return videoRepository.findByChannelAndUploadedStatus(channelId, pageable);
+    }
+
+    public Video getVideoByFilename(UUID filename) {
+        return findEntityService.getVideoById(filename);
     }
 
     @Transactional
     public void evaluateVideo(EvaluateVideoDTO dto, Long userId) {
-        Video video = findEntityService.getVideoById(dto.getVideoId());
-        User user = getUserById(userId);
+        Video video = findEntityService.getVideoById(dto.filename());
 
-        Like currentLike = video.getLikes().stream()
-                .filter((like) -> like.getUser().getId().equals(userId))
-                .findFirst().orElse(null);
-
-        Dislike currentDislike = video.getDislikes().stream()
-                .filter((dislike -> dislike.getUser().getId().equals(userId)))
-                .findFirst().orElse(null);
-
-        switch (dto.getEvaluateType()) {
-            case LIKE -> {
-                if (currentLike != null) {
-                    video.getLikes().remove(currentLike);
-                } else {
-                    if (currentDislike != null) {
-                        video.getDislikes().remove(currentDislike);
-                    }
-
-                    addLike(video, user);
-                }
-            }
-            case DISLIKE -> {
-                if (currentDislike != null) {
-                    video.getDislikes().remove(currentDislike);
-                } else {
-                    if (currentLike != null) {
-                        video.getLikes().remove(currentLike);
-                    }
-
-                    addDislike(video, user);
-                }
-            }
-        }
+        evaluateService.evaluate(dto.evaluateType(), userId, video);
     }
 
-    private void addDislike(Video video, User user) {
-        Dislike dislike = ReactionFactory.dislike(video, user);
+    public GetEvaluatesVideoDTO getEvaluates(UUID filename) {
+        findEntityService.getVideoById(filename);
 
-        video.getDislikes().add(dislike);
-    }
-
-    private void addLike(Video video, User user) {
-        Like like = ReactionFactory.like(video, user);
-
-        video.getLikes().add(like);
-    }
-
-    public GetEvaluatesVideoDTO getEvaluates(Long videoId) {
-        findEntityService.getVideoById(videoId);
-
-        return videoRepository.getAllEvaluatesByVideo(videoId);
+        return videoRepository.getAllEvaluatesByVideo(filename);
     }
 
     public BelongEvaluateDTO checkBelongEvaluate(RequestBelongEvaluateDTO dto,
                                                  Long userId) {
-        Video video = findEntityService.getVideoById(dto.getVideoId());
+        Video video = findEntityService.getVideoById(dto.filename());
         BelongEvaluateDTO belongEvaluateDTO = new BelongEvaluateDTO();
 
         for (Like like : video.getLikes()) {
@@ -175,13 +231,32 @@ public class VideoService {
         return belongEvaluateDTO;
     }
 
-    private Video getVideoByPath(String filename) {
-        return videoRepository.findVideoByPath(filename).orElseThrow(()
-                -> new VideoNotFoundException(String.format("Video with filename %s not found!", filename)));
+    public List<Video> getPopularVideo(Long userId, Pageable pageable) {
+        List<UUID> ids;
+
+        if (userId == null) {
+            ids = videoRepository.
+                    getPopularVideo(pageable).map(PopularVideoDTO::getVideoId).toList();
+        } else {
+            ids = client.getRecommenderVideos(userId).stream()
+                    .map(RecommenderDTO::getVideoId).toList();
+        }
+
+        return videoRepository.findAllById(ids);
     }
 
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(()
-                -> new UserNotFoundException(String.format("User with id %d not found!", userId)));
+    private void sendEmailsAllSubscribers(Channel channel, Video video) {
+        executorService.submit(() -> channel.getSubscriptions().forEach(
+                subscription -> {
+                    log.info("Отправка уведомления пользователю с id={}!", subscription.getSubscriber().getId());
+
+                    EmailRequestDTO dto = new EmailRequestDTO();
+                    dto.setEmail(subscription.getSubscriber().getProfile().getEmail());
+                    dto.setVideoName(video.getName());
+                    dto.setChannelName(channel.getName());
+
+                    kafkaTemplate.send(topicConfig.getEmailRequest(), dto);
+                }
+        ));
     }
 }

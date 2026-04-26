@@ -12,7 +12,7 @@ spring:
   application:
     name: auth-service
   datasource:
-    url: jdbc:postgresql://172.23.6.13:5432/auth
+    url: jdbc:postgresql://db:5432/auth
     username: postgres
     password: 1234
     driver-class-name: org.postgresql.Driver
@@ -34,7 +34,7 @@ spring:
 
 kafka:
   group-id: file-service-group
-  bootstrap-server: localhost:9092
+  bootstrap-server: kafka:9092
 
 topics:
   email-request: email-request
