@@ -98,7 +98,7 @@ public class KafkaConfig {
         return factory;
     }
 
-    @Bean
+    @Bean(name = {"concurrentKafkaListenerContainerFactory", "kafkaListenerContainerFactory"})
     public ConcurrentKafkaListenerContainerFactory<String, Object> concurrentKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();

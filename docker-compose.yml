@@ -103,28 +103,28 @@ services:
     networks:
       - my-network
 
-#  email-service:
-#    build:
-#      context: ./email-service
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8083:8083"
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_EMAIL}
-#      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-#      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-#      MAIL_USERNAME: ${MAIL_USERNAME}
-#      MAIL_PASSWORD: ${MAIL_PASSWORD}
-#      MAIL_HOST: ${MAIL_HOST}
-#      MAIL_PORT: ${MAIL_PORT}
-#      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_HOST}:${KAFKA_PORT}
-#    depends_on:
-#      - db
-#      - minio
-#      - redis
-#      - kafka
-#    networks:
-#      - my-network
+  email-service:
+    build:
+      context: ./email-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_EMAIL}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_HOST}:${KAFKA_PORT}
+    depends_on:
+      - db
+      - minio
+      - redis
+      - kafka
+    networks:
+      - my-network
 
 #  camunda:
 #    build:
@@ -192,7 +192,6 @@ services:
       - KAFKA_CFG_CONTROLLER_BROKER_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
 
-      # 👇 ВАЖНО
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092,CONTROLLER://:9093
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
 

@@ -72,7 +72,7 @@ public class AuthenticationService {
     }
 
     public ResponseTokenRefreshDTO signUp(RegisterDTO registerDTO) {
-        RoleUser role = roleRepository.findByName(Role.STUDENT)
+        RoleUser role = roleRepository.findByName(Role.USER)
                 .orElseThrow(() -> new RoleNotFoundException("Role not found!"));
 
         UserAuthInfo user = createUserEntity(registerDTO, role);

@@ -45,7 +45,7 @@ public class UserService implements UserDetailsService {
 
     private void updateRoleUser(RoleUser newRole, UserAuthInfo user) {
         user.setRole(newRole);
-        saveUserInMicroservice(user);
+        // saveUserInMicroservice(user);
     }
 
     public void saveUserInMicroservice(UserAuthInfo user) {

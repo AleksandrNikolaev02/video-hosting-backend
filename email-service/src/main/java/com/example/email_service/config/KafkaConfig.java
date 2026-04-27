@@ -14,9 +14,11 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
@@ -57,7 +59,7 @@ public class KafkaConfig {
         return factory;
     }
 
-    @Bean
+    @Bean(name = {"concurrentKafkaListenerContainerFactory", "kafkaListenerContainerFactory"})
     public ConcurrentKafkaListenerContainerFactory<String, Object> concurrentKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -66,18 +68,21 @@ public class KafkaConfig {
     }
 
     private Map<String, Object> getConsumerConfig() {
-        return Map.of(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer,
-                ConsumerConfig.GROUP_ID_CONFIG, groupId,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class,
-                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest",
-                ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 300000,
-                JsonDeserializer.TRUSTED_PACKAGES, "*",
-                ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 15000,
-                ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 5000
-        );
+        Map<String, Object> config = new HashMap<>();
+
+        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+        config.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        config.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, ErrorHandlingDeserializer.class);
+        config.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, ErrorHandlingDeserializer.class);
+        config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(JsonDeserializer.VALUE_DEFAULT_TYPE, String.class.getName());
+        config.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        config.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+
+        return config;
     }
 
     private Map<String, Object> getProducerConfig() {

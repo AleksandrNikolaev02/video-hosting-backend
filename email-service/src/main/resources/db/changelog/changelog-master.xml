@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
     http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
 
-    <changeSet id="initialize-roles" author="admin">
-        <insert tableName="roles">
-            <column name="id" value="1"/>
-            <column name="name" value="ADMIN"/>
-        </insert>
-        <insert tableName="roles">
-            <column name="id" value="2"/>
-            <column name="name" value="USER"/>
-        </insert>
-    </changeSet>
+    <include file="db/changelog/changes/create-two-factor-code-table.xml"/>
+
 </databaseChangeLog>
