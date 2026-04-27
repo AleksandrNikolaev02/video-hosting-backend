@@ -1,21 +1,59 @@
 server:
-  port: 8087
+  port: 8083
 
 spring:
+  application:
+    name: email-service
   mail:
     host: smtp.gmail.com
     username: u.nikolaev197112@gmail.com
-    password: npzjnxclfudrzbqt
+    password: refzqbcjkotmqgjz
     port: 587
     properties:
       mail:
         smtp:
           auth: true
           starttls.enable: true
+  datasource:
+    url: jdbc:postgresql://db:5432/email
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 25
+  jpa:
+    hibernate:
+      ddl-auto: none
+  liquibase:
+    change-log: classpath:/db/changelog/changelog-master.xml
 
 kafka:
   bootstrap-server: kafka:9092
   group-id: file-service-group
 
+app:
+  time-to-live-code: 5
+  time-delay-clear-code: 30
+  limit-to-delete: 50
+  min-code: 100000
+  max-code: 999999
+
 topics:
   email-request: email-request
+
+logging:
+  level:
+    org.springframework: INFO
+    org.apache.kafka: INFO
+    org.springframework.kafka: DEBUG
+    com.netflix.discovery: INFO
+    org.springframework.cloud.netflix.eureka: WARN
+    org.apache.hc.client5.http: WARN
+    org.apache.hc.client5.http.wire: OFF
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8889/eureka/
+  instance:
+    prefer-ip-address: true

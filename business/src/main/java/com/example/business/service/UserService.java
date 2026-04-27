@@ -15,7 +15,7 @@ public class UserService {
 
     @KafkaListener(topics = "${topics.create-user}",
             groupId = "${kafka.group-id}",
-            containerFactory = "kafkaTemplateTaskDetailsListener")
+            containerFactory = "kafkaListenerContainerFactory")
     public void createUser(UserDTO dto) {
         userRepository.save(userMapper.getUserFromUserDTO(dto));
     }
