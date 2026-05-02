@@ -64,7 +64,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpRange;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -152,7 +151,7 @@ public class FileService {
     }
 
     @Transactional
-    public void saveChunkFile(SaveChunksDTO dto) {
+    public void saveChunkFile(SaveChunksDTO dto, long userId) {
         VideoEntity file = videoEntityRepository.findByKey(dto.key()).orElseThrow(() ->
             new FileNotFoundByKeyException(String.format("File not found by key: %s", dto.key()))
         );
@@ -162,15 +161,15 @@ public class FileService {
 
         log.info("Завершено обновление информации о видео в БД. Файл: {}", file.getFilename());
 
-        compareChunks(file, dto);
+        compareChunks(file, dto, userId);
     }
 
-    private void compareChunks(VideoEntity file, SaveChunksDTO dto) {
+    private void compareChunks(VideoEntity file, SaveChunksDTO dto, long userId) {
         log.info("Начало выполнения склейки частей видео. Файл: {}", file.getFilename());
         List<ComposeSource> sources = new ArrayList<>();
 
         for (PartFile part : file.getParts()) {
-            String path = String.format("%d/%s/%s/%s", dto.userId(), fileConfig.getVideoPath(),
+            String path = String.format("%d/%s/%s/%s", userId, fileConfig.getVideoPath(),
                             file.getFilename(), part.getPartName());
 
             sources.add(ComposeSource.builder()
@@ -183,7 +182,7 @@ public class FileService {
             minioClient.composeObject(
                     ComposeObjectArgs.builder()
                             .bucket(fileConfig.getBucket())
-                            .object(String.format("%d/%s/%s", dto.userId(), fileConfig.getVideoPath(),
+                            .object(String.format("%d/%s/%s", userId, fileConfig.getVideoPath(),
                                     file.getBusinessId()))
                             .sources(sources)
                             .userMetadata(Map.of("Original-Content-Type", file.getContentType()))

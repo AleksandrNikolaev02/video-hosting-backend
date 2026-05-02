@@ -46,4 +46,5 @@
     <include file="db/changelog/changes/create-subscriptions-sequence-2025-10-28.xml"/>
     <include file="db/changelog/changes/create-subscriptions-table-2025-10-28.xml"/>
     <include file="db/changelog/changes/update-primary-key-in-previews-table.xml"/>
+    <include file="db/changelog/changes/add-column-auth_id-to-users-table.xml"/>
 </databaseChangeLog>

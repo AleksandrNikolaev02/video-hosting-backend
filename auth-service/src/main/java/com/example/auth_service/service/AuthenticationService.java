@@ -1,12 +1,13 @@
 package com.example.auth_service.service;
 
+import com.example.auth_service.client.EmailServiceClient;
 import com.example.auth_service.config.TopicConfig;
 import com.example.auth_service.dto.LoginDTO;
+import com.example.auth_service.dto.LoginResponse;
 import com.example.auth_service.dto.RegisterDTO;
 import com.example.auth_service.dto.ResponseTokenRefreshDTO;
 import com.example.auth_service.enums.Role;
 import com.example.auth_service.exceptions.KafkaSendMessageException;
-import com.example.auth_service.exceptions.MicroserviceUnavailableException;
 import com.example.auth_service.exceptions.RoleNotFoundException;
 import com.example.auth_service.exceptions.TwoFactorAuthenticationException;
 import com.example.auth_service.exceptions.UserSettingNotFoundException;
@@ -22,19 +23,12 @@ import com.example.dto.TwoFactorCodeDTO;
 import com.example.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
-import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Service
 @RequiredArgsConstructor
@@ -44,16 +38,15 @@ public class AuthenticationService {
     private final UserSettingRepository userSettingRepository;
     private final UserService userService;
     private final TopicConfig config;
-    private final ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final EmailServiceClient emailServiceClient;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final JsonMapper mapper;
-    private final Integer TIMEOUT = 5;
 
-    public Object signIn(LoginDTO loginDTO) {
+    public LoginResponse signIn(LoginDTO loginDTO) {
         authenticate(loginDTO);
 
         UserAuthInfo user = loadUserByUsername(loginDTO.email());
@@ -62,13 +55,17 @@ public class AuthenticationService {
                 .orElseThrow(() -> new UserSettingNotFoundException(
                         String.format("UserSetting for user with id = %d not found!", user.getId())));
 
+        LoginResponse response = new LoginResponse();
+
         if (setting.isTwoFactor()) {
             sendAsyncMessageToKafka(config.getEmailRequest(), loginDTO.email());
 
-            return "A code has been sent to your email!";
+            response.setRequires2FA(true);
+        } else {
+            response.setPayload(generateJwtToken(user));
         }
 
-        return generateJwtToken(user);
+        return response;
     }
 
     public ResponseTokenRefreshDTO signUp(RegisterDTO registerDTO) {
@@ -89,10 +86,7 @@ public class AuthenticationService {
     }
 
     public ResponseTokenRefreshDTO twoFactorAuthentication(TwoFactorCodeDTO dto) {
-        var future = sendSyncMessageToKafka(config.getGetEmail(), dto);
-        var response = getResponseFromEmailMicroservice(future);
-
-        CheckEmailDTO emailDTO = mapper.deserialize(response.value(), CheckEmailDTO.class);
+        CheckEmailDTO emailDTO = sendSyncMessageRest(dto);
 
         validateStatus(emailDTO.getStatus());
 
@@ -107,21 +101,10 @@ public class AuthenticationService {
         }
     }
 
-    private ConsumerRecord<String, String> getResponseFromEmailMicroservice(
-            RequestReplyFuture<String, String, String> future) {
-        try {
-            return future.get(TIMEOUT, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new MicroserviceUnavailableException("Microservice email_service is unavailable now!");
-        }
-    }
+    private CheckEmailDTO sendSyncMessageRest(TwoFactorCodeDTO dto) {
+        ResponseEntity<CheckEmailDTO> response = emailServiceClient.checkEmail(dto);
 
-    private RequestReplyFuture<String, String, String> sendSyncMessageToKafka(String topic, TwoFactorCodeDTO dto) {
-        String json = mapper.serialize(dto);
-
-        ProducerRecord<String, String> record = new ProducerRecord<>(topic, json);
-
-        return replyingKafkaTemplate.sendAndReceive(record);
+        return response.getBody();
     }
 
     private UserAuthInfo createUserEntity(RegisterDTO registerDTO, RoleUser role) {

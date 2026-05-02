@@ -16,6 +16,7 @@ import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.enums.ChannelStatus;
 import com.example.business.enums.VideoStatus;
+import com.example.business.event.VideoDeleteEvent;
 import com.example.business.exception.UserNotCreateChannelException;
 import com.example.business.factory.VideoFactory;
 import com.example.business.model.Channel;
@@ -32,6 +33,8 @@ import com.example.dto.PostMessageDTO;
 import com.example.dto.StatusProcessChannel;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -60,6 +63,7 @@ public class VideoService {
     private final EvaluateService evaluateService;
     private final ExecutorService executorService;
     private final RecommenderServiceClient client;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void updateVideo(UpdateVideoDTO dto, UUID filename, Long userId) {
@@ -104,6 +108,8 @@ public class VideoService {
         }
 
         videoRepository.delete(video);
+
+        eventPublisher.publishEvent(new VideoDeleteEvent(dto.filename()));
 
         kafkaTemplate.send(topicConfig.getDeleteDataVideo(), event).whenComplete(
                 (result, exception) -> {

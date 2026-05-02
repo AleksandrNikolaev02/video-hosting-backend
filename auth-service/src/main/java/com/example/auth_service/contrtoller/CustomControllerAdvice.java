@@ -4,6 +4,7 @@ import com.example.auth_service.exceptions.AccessDeniedException;
 import com.example.auth_service.exceptions.KafkaSendMessageException;
 import com.example.auth_service.exceptions.MicroserviceUnavailableException;
 import com.example.auth_service.exceptions.RefreshTokenNotFoundException;
+import com.example.auth_service.exceptions.RestSendMessageClientException;
 import com.example.auth_service.exceptions.RoleNotFoundException;
 import com.example.auth_service.exceptions.TokenRefreshException;
 import com.example.auth_service.exceptions.TwoFactorAuthenticationException;
@@ -53,11 +54,16 @@ public class CustomControllerAdvice {
 
     @ExceptionHandler(MicroserviceUnavailableException.class)
     public ResponseEntity<String> exceptionHandler(MicroserviceUnavailableException exception) {
-        return new ResponseEntity<>(exception.getMessage(), HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(TwoFactorAuthenticationException.class)
     public ResponseEntity<String> exceptionHandler(TwoFactorAuthenticationException exception) {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(RestSendMessageClientException.class)
+    public ResponseEntity<String> exceptionHandler(RestSendMessageClientException exception) {
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 }

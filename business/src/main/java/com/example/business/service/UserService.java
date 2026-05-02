@@ -17,6 +17,10 @@ public class UserService {
             groupId = "${kafka.group-id}",
             containerFactory = "kafkaListenerContainerFactory")
     public void createUser(UserDTO dto) {
-        userRepository.save(userMapper.getUserFromUserDTO(dto));
+        var user = userMapper.getUserFromUserDTO(dto);
+
+        user.setId(userRepository.findMaxId()); // жесткий костыль!
+
+        userRepository.save(user);
     }
 }
