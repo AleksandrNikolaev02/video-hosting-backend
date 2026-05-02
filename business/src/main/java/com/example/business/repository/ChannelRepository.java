@@ -17,6 +17,9 @@ public interface ChannelRepository extends JpaRepository<Channel, Long> {
     @Query(value = "SELECT channel FROM Channel channel WHERE channel.status = :status")
     List<Channel> findByStatus(@Param("status") ChannelStatus status);
 
+    @Query(value = "SELECT channel FROM Channel channel WHERE channel.author.id = :authorId")
+    Optional<Channel> findChannelByUserId(@Param("authorId") Long authorId);
+
     @Modifying
     @Query(value = """
         DELETE FROM Channel channel WHERE channel.id = :channel_id

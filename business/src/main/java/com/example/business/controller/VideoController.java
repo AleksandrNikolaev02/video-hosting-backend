@@ -11,7 +11,6 @@ import com.example.business.dto.RequestBelongEvaluateDTO;
 import com.example.business.dto.UpdatePathVideoDTO;
 import com.example.business.dto.UpdateVideoDTO;
 import com.example.business.mapper.VideoMapper;
-import com.example.business.model.ElasticVideo;
 import com.example.business.service.SearchService;
 import com.example.business.service.VideoService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,8 +36,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -163,19 +160,8 @@ public class VideoController {
 
     @Operation(summary = "Найти видео по запросу пользователя")
     @GetMapping(value = "/search")
-    public List<ElasticVideo> searchVideo(@RequestParam(name = "query") String query) {
-        return searchService.searchVideo(query)
-                .stream()
-                .peek(video -> {
-                    if (video.getNames() == null) {
-                        video.setNames(Collections.emptyList());
-                    } else {
-                        video.setNames(Arrays.stream(video.getNames()
-                                        .get(0)
-                                        .split(", "))
-                                .toList());
-                    }
-                }).toList();
+    public List<GetVideoDTO> searchVideo(@RequestParam(name = "query") String query) {
+        return searchService.searchVideo(query);
     }
 
     @GetMapping(value = "/get_popular")

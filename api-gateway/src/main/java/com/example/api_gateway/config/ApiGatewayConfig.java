@@ -7,13 +7,10 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 
 @Configuration
 @RequiredArgsConstructor
 public class ApiGatewayConfig {
-    @Value("${app.service-name.app-service}")
-    private String appServiceName;
     @Value("${app.service-name.auth-service}")
     private String authServiceName;
     @Value("${app.service-name.file-service}")
@@ -25,34 +22,25 @@ public class ApiGatewayConfig {
     @Bean
     RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route(predicateSpec ->
-                    predicateSpec.path("/app/**")
-                            .and()
-                            .method(HttpMethod.GET, HttpMethod.DELETE, HttpMethod.POST)
-                            .filters(filter -> filter.stripPrefix(1))
-                            .uri(String.format("lb://%s", appServiceName)))
-                .route(predicateSpec ->
-                        predicateSpec.path("/file-service/**")
-                                .and()
-                                .method(HttpMethod.GET, HttpMethod.DELETE, HttpMethod.POST, HttpMethod.PUT)
-                                .filters(filter -> filter.stripPrefix(1))
-                                .uri(String.format("lb://%s", fileServiceName)))
-                .route(predicateSpec ->
-                        predicateSpec.path("/business-service/**")
-                                .and()
-                                .method(HttpMethod.GET, HttpMethod.DELETE, HttpMethod.POST, HttpMethod.PUT)
-                                .filters(filter -> filter.stripPrefix(1))
-                                .uri(String.format("lb://%s", businessServiceName)))
                 // no auth endpoints
                 .route(predicateSpec ->
-                    predicateSpec.path("/noauth/**")
-                            .filters(filter -> filter
-                                    .stripPrefix(1))
-                            .uri(String.format("lb://%s", authServiceName)))
-                // auth endpoints
-                .route(predicate -> predicate.path("/auth/**")
-                        .filters(filter -> filter.filter(customGatewayFilter).stripPrefix(1))
-                        .uri(String.format("lb://%s", appServiceName)))
+                        predicateSpec.path("/noauth/file-service/**")
+                                .filters(filter -> filter.stripPrefix(2))
+                                .uri(String.format("lb://%s", fileServiceName)))
+                .route(predicateSpec ->
+                        predicateSpec.path("/noauth/business-service/**")
+                                .filters(filter -> filter.stripPrefix(2))
+                                .uri(String.format("lb://%s", businessServiceName)))
+                .route(predicateSpec ->
+                        predicateSpec.path("/noauth/auth-service/**")
+                                .filters(filter -> filter.stripPrefix(2))
+                                .uri(String.format("lb://%s", authServiceName)))
+                .route(predicate -> predicate.path("/auth/file-service/**")
+                        .filters(filter -> filter.filter(customGatewayFilter).stripPrefix(2))
+                        .uri(String.format("lb://%s", fileServiceName)))
+                .route(predicate -> predicate.path("/auth/business-service/**")
+                        .filters(filter -> filter.filter(customGatewayFilter).stripPrefix(2))
+                        .uri(String.format("lb://%s", businessServiceName)))
                 .build();
     }
 }

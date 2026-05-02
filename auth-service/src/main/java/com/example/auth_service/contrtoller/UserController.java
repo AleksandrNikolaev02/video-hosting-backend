@@ -1,6 +1,7 @@
 package com.example.auth_service.contrtoller;
 
 import com.example.auth_service.dto.LoginDTO;
+import com.example.auth_service.dto.LoginResponse;
 import com.example.auth_service.dto.RegisterDTO;
 import com.example.auth_service.dto.ResponseTokenRefreshDTO;
 import com.example.auth_service.service.AuthenticationService;
@@ -24,12 +25,12 @@ public class UserController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Validated @RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<LoginResponse> login(@Validated @RequestBody LoginDTO loginDTO) {
         return ResponseEntity.ok(authenticationService.signIn(loginDTO));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Validated @RequestBody RegisterDTO registerDTO) {
+    public ResponseEntity<ResponseTokenRefreshDTO> register(@Validated @RequestBody RegisterDTO registerDTO) {
         return ResponseEntity.status(200).body(authenticationService.signUp(registerDTO));
     }
 
@@ -42,7 +43,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Email microservice returned non ok status!"),
             @ApiResponse(responseCode = "503", description = "Microservice email_service is unavailable now!")})
     @Tag(name = "public")
-    public ResponseEntity<?> twoFactorAuthentication(@Validated @RequestBody TwoFactorCodeDTO dto) {
+    public ResponseEntity<ResponseTokenRefreshDTO> twoFactorAuthentication(@Validated @RequestBody TwoFactorCodeDTO dto) {
         return ResponseEntity.ok(authenticationService.twoFactorAuthentication(dto));
     }
 }

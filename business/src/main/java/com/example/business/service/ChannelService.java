@@ -89,6 +89,12 @@ public class ChannelService {
         return channelMapper.getChannelDtoFromChannel(channel);
     }
 
+    public ChannelDTO getMyChannel(Long userId) {
+        Channel channel = findEntityService.getChannelByUserId(userId);
+
+        return channelMapper.getChannelDtoFromChannel(channel);
+    }
+
     public void updateDataChannel(UpdateChannelDTO dto, Long userId) {
         User author = findEntityService.getUserById(userId);
 

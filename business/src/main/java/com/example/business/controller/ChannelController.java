@@ -67,6 +67,16 @@ public class ChannelController {
         return ResponseEntity.ok(channelService.getChannelInfo(channelId));
     }
 
+    @GetMapping("/my-channel")
+    @Operation(summary = "Получить информацию о своем канале по id пользователя")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Информация о канале получена!"),
+            @ApiResponse(responseCode = "404", description = "Channel with id {id} not found!")
+    })
+    public ResponseEntity<ChannelDTO> getMyChannel(@RequestHeader("X-user-id") Long userId) {
+        return ResponseEntity.ok(channelService.getMyChannel(userId));
+    }
+
     @PutMapping("/update")
     @Operation(summary = "Обновить данные канала")
     @ApiResponses(value = {

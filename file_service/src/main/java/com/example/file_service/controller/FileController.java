@@ -73,8 +73,9 @@ public class FileController {
             @ApiResponse(responseCode = "200", description = "File was compare and save!")
     })
     @PostMapping(value = "/save_all")
-    public ResponseEntity<String> compareAndSaveChunks(@Validated @RequestBody SaveChunksDTO dto) {
-        fileService.saveChunkFile(dto);
+    public ResponseEntity<String> compareAndSaveChunks(@Validated @RequestBody SaveChunksDTO dto, 
+                                                       @RequestHeader("X-user-id") long userId) {
+        fileService.saveChunkFile(dto, userId);
 
         return ResponseEntity.ok("File was compare and save!");
     }

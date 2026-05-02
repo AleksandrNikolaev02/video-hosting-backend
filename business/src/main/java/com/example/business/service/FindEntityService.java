@@ -60,6 +60,13 @@ public class FindEntityService {
                 );
     }
 
+    public Channel getChannelByUserId(Long userId) {
+        return channelRepository.findChannelByUserId(userId)
+                .orElseThrow(() -> new ChannelNotFoundException(
+                        String.format("Channel with author_id %d not found!", userId))
+                );
+    }
+
     public RequestChannel getRequestChannelById(Long requestId) {
         return requestChannelRepository.findById(requestId)
                 .orElseThrow(() -> new RequestNotFoundException(

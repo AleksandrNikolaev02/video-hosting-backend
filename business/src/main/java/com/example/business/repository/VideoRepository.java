@@ -21,6 +21,11 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
     Page<Video> findByCreatorOrderByFilename(@Param("user_id") Long userId, Pageable pageable);
 
     @Query("""
+        select video from Video video where video.filename IN :uids
+    """)
+    List<Video> findVideoByIds(@Param("uids") List<UUID> uids);
+
+    @Query("""
         select video from Video video where video.channel.id = :channel_id and video.videoStatus = com.example.business.enums.VideoStatus.UPLOADED order by video.filename
     """)
     Page<Video> findByChannelAndUploadedStatus(@Param("channel_id") Long channelId, Pageable pageable);

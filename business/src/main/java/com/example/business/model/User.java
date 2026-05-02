@@ -1,6 +1,7 @@
 package com.example.business.model;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -25,6 +26,8 @@ import java.util.List;
 public class User {
     @Id
     private Long id;
+    @Column(name = "auth_id")
+    private Long authId;
     @Embedded
     private UserProfile profile;
     @OneToOne(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
