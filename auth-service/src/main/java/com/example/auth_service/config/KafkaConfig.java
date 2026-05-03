@@ -14,9 +14,6 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
-import org.springframework.kafka.listener.ContainerProperties;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
@@ -24,15 +21,13 @@ import java.util.Map;
 
 @Configuration
 public class KafkaConfig {
-    @Value("${topics.get-email-reply}")
-    private String getEmailReplyTopic;
     @Value("${kafka.bootstrap-server}")
     private String bootstrapServer;
     @Value("${kafka.group-id}")
     private String groupId;
 
     @Bean
-    public ProducerFactory<String, String> producerFactory() {
+    public ProducerFactory<String, Object> producerFactory() {
         return new DefaultKafkaProducerFactory<>(getProducerConfig());
     }
 
@@ -42,7 +37,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, String> kafkaTemplate() {
+    public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 
@@ -61,20 +56,6 @@ public class KafkaConfig {
     public ConsumerFactory<String, String> consumerFactoryString() {
         return new DefaultKafkaConsumerFactory<>(getConsumerConfig(), new StringDeserializer(),
                 new StringDeserializer());
-    }
-
-    @Bean
-    public ReplyingKafkaTemplate<String, String, String> replyingKafkaTemplate(
-            ProducerFactory<String, String> producerFactory,
-            ConcurrentMessageListenerContainer<String, String> replyContainer) {
-        return new ReplyingKafkaTemplate<>(producerFactory, replyContainer);
-    }
-
-    @Bean
-    public ConcurrentMessageListenerContainer<String, String> replyContainer(
-            ConsumerFactory<String, String> consumerFactory) {
-        ContainerProperties containerProperties = new ContainerProperties(getEmailReplyTopic);
-        return new ConcurrentMessageListenerContainer<>(consumerFactory, containerProperties);
     }
 
     @Bean

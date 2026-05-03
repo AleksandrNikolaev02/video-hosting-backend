@@ -3,6 +3,7 @@ package com.example.business.repository;
 import com.example.business.dto.GetEvaluatesVideoDTO;
 import com.example.business.dto.PopularVideoDTO;
 import com.example.business.model.Playlist;
+import com.example.business.model.User;
 import com.example.business.model.Video;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,4 +62,7 @@ public interface VideoRepository extends JpaRepository<Video, UUID> {
             where r.type = 'like' group by video_id order by countLikes desc
             """, nativeQuery = true)
     Page<PopularVideoDTO> getPopularVideo(Pageable pageable);
+
+    @Modifying
+    void deleteByCreator(User user);
 }

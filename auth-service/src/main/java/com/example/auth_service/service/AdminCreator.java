@@ -40,6 +40,7 @@ public class AdminCreator {
                     .email(adminData.getEmail())
                     .password(passwordEncoder.encode(adminData.getPassword()))
                     .role(role)
+                    .enabled(true)
                     .build();
 
             userRepository.save(user);

@@ -10,17 +10,18 @@ import com.example.auth_service.enums.Role;
 import com.example.auth_service.exceptions.KafkaSendMessageException;
 import com.example.auth_service.exceptions.RoleNotFoundException;
 import com.example.auth_service.exceptions.TwoFactorAuthenticationException;
+import com.example.auth_service.exceptions.UserAlreadyExistsException;
 import com.example.auth_service.exceptions.UserSettingNotFoundException;
 import com.example.auth_service.model.RoleUser;
 import com.example.auth_service.model.UserAuthInfo;
 import com.example.auth_service.model.UserSetting;
 import com.example.auth_service.repository.RoleRepository;
 import com.example.auth_service.repository.UserSettingRepository;
-import com.example.auth_service.util.JsonMapper;
 import com.example.dto.CheckEmailDTO;
 import com.example.dto.Status;
 import com.example.dto.TwoFactorCodeDTO;
 import com.example.dto.UserDTO;
+import com.example.dto.VerificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,20 +41,19 @@ public class AuthenticationService {
     private final UserSettingRepository userSettingRepository;
     private final UserService userService;
     private final TopicConfig config;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final EmailServiceClient emailServiceClient;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
-    private final JsonMapper mapper;
 
     public LoginResponse signIn(LoginDTO loginDTO) {
         authenticate(loginDTO);
 
         UserAuthInfo user = loadUserByUsername(loginDTO.email());
 
-        UserSetting setting = userSettingRepository.findByUserId(user.getId())
+        UserSetting setting = userSettingRepository.findByUserId(user.getId().intValue())
                 .orElseThrow(() -> new UserSettingNotFoundException(
                         String.format("UserSetting for user with id = %d not found!", user.getId())));
 
@@ -68,7 +70,13 @@ public class AuthenticationService {
         return response;
     }
 
-    public ResponseTokenRefreshDTO signUp(RegisterDTO registerDTO) {
+    public void signUp(RegisterDTO registerDTO) {
+        Optional<UserAuthInfo> potentialUser = userService.loadUserByEmail(registerDTO.email());
+
+        if (potentialUser.isPresent()) {
+            throw new UserAlreadyExistsException("Пользователь с такой почтой уже зарегистрирован!");
+        }
+
         RoleUser role = roleRepository.findByName(Role.USER)
                 .orElseThrow(() -> new RoleNotFoundException("Role not found!"));
 
@@ -77,12 +85,11 @@ public class AuthenticationService {
         userService.saveUserInUserRepository(user);
 
         UserSetting setting = createUserSettingEntity(user);
-
         saveUserSettingInUserSettingRepository(setting);
 
         createUserInMicroservice(registerDTO, user);
 
-        return generateJwtToken(user);
+        sendAsyncMessageToKafka(config.getEmailRequest(), registerDTO.email());
     }
 
     public ResponseTokenRefreshDTO twoFactorAuthentication(TwoFactorCodeDTO dto) {
@@ -91,6 +98,11 @@ public class AuthenticationService {
         validateStatus(emailDTO.getStatus());
 
         UserAuthInfo user = loadUserByUsername(emailDTO.getEmail());
+
+        if (dto.getKind() == VerificationType.REGISTER) {
+            user.setEnabled(true);
+            userService.saveUserInUserRepository(user);
+        }
 
         return generateJwtToken(user);
     }
@@ -111,6 +123,7 @@ public class AuthenticationService {
         return UserAuthInfo.builder()
                 .role(role)
                 .email(registerDTO.email())
+                .enabled(false)
                 .password(passwordEncoder.encode(registerDTO.password()))
                 .build();
     }
@@ -133,7 +146,7 @@ public class AuthenticationService {
 
     private ResponseTokenRefreshDTO generateJwtToken(UserAuthInfo user) {
         String jwt = jwtTokenProvider.generateToken(user);
-        var refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        var refreshToken = refreshTokenService.createRefreshToken(user.getId().intValue());
 
         return new ResponseTokenRefreshDTO(jwt, refreshToken.getToken());
     }
@@ -154,7 +167,7 @@ public class AuthenticationService {
     }
 
     private void createUserInMicroservice(RegisterDTO dto, UserAuthInfo user) {
-        kafkaTemplate.send(config.getCreateUser(), mapper.serialize(createUserDtoFrom(user, dto)));
+        kafkaTemplate.send(config.getCreateUser(), createUserDtoFrom(user, dto));
     }
 
     private UserDTO createUserDtoFrom(UserAuthInfo user, RegisterDTO dto) {

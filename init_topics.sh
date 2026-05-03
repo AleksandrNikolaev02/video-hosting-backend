@@ -21,3 +21,11 @@ docker exec kafka kafka-topics.sh \
   --bootstrap-server kafka:9092 \
   --partitions 1 \
   --replication-factor 1
+
+docker exec kafka kafka-topics.sh \
+  --create \
+  --if-not-exists \
+  --topic email-notification \
+  --bootstrap-server kafka:9092 \
+  --partitions 1 \
+  --replication-factor 1

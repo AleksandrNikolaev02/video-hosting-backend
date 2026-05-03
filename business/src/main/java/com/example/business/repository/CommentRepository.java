@@ -1,10 +1,12 @@
 package com.example.business.repository;
 
 import com.example.business.model.Comment;
+import com.example.business.model.User;
 import com.example.business.model.Video;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,4 +24,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     Long checkBelongReactionToComment(@Param("commentId") Long commentId,
                                       @Param("userId") Long userId,
                                       @Param("type") String type);
+
+    @Modifying
+    void deleteByCreator(User creator);
 }

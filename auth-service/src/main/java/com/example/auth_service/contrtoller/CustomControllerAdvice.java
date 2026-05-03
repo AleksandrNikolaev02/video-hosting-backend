@@ -8,10 +8,12 @@ import com.example.auth_service.exceptions.RestSendMessageClientException;
 import com.example.auth_service.exceptions.RoleNotFoundException;
 import com.example.auth_service.exceptions.TokenRefreshException;
 import com.example.auth_service.exceptions.TwoFactorAuthenticationException;
+import com.example.auth_service.exceptions.UserAlreadyExistsException;
 import com.example.auth_service.exceptions.UserNotFoundException;
 import com.example.auth_service.exceptions.UserSettingNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -64,6 +66,16 @@ public class CustomControllerAdvice {
 
     @ExceptionHandler(RestSendMessageClientException.class)
     public ResponseEntity<String> exceptionHandler(RestSendMessageClientException exception) {
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<String> exceptionHandler(DisabledException exception) {
+        return new ResponseEntity<>(exception.getMessage(), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<String> exceptionHandler(UserAlreadyExistsException exception) {
         return new ResponseEntity<>(exception.getMessage(), HttpStatus.BAD_REQUEST);
     }
 }

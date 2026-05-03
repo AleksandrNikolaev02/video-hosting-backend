@@ -78,8 +78,8 @@ public class KafkaConfig {
         config.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, ErrorHandlingDeserializer.class);
         config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(JsonDeserializer.VALUE_DEFAULT_TYPE, String.class.getName());
-        config.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        // config.put(JsonDeserializer.VALUE_DEFAULT_TYPE, String.class.getName());
+        config.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
         config.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
 
         return config;

@@ -30,8 +30,9 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ResponseTokenRefreshDTO> register(@Validated @RequestBody RegisterDTO registerDTO) {
-        return ResponseEntity.status(200).body(authenticationService.signUp(registerDTO));
+    public ResponseEntity<Void> register(@Validated @RequestBody RegisterDTO registerDTO) {
+        authenticationService.signUp(registerDTO);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/twoFactor")

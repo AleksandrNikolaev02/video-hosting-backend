@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class SendRequestEmailErrorHandler implements KafkaListenerErrorHandler {
     @Override
     public Object handleError(Message<?> message, ListenerExecutionFailedException exception) {
-        log.error("Получено исключение {}", exception.getMessage(), exception);
+        log.error("Получено исключение при отправке письма: {}", exception.getMessage(), exception);
 
         return null;
     }

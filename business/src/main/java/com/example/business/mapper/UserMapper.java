@@ -9,6 +9,7 @@ import org.mapstruct.Mappings;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     @Mappings(value = {
+            @Mapping(target = "id", source = "id"),
             @Mapping(target = "authId", source = "id"),
             @Mapping(target = "profile.fname", source = "fname"),
             @Mapping(target = "profile.sname", source = "sname"),

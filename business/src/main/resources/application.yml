@@ -60,6 +60,7 @@ topics:
   publish-event-topic: publish-event
   email-request: email-request
   delete-data-video: delete-data-video
+  email-notification: email-notification
 
 metrics:
   error-minio-service-metric: error_minio_service_metric

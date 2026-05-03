@@ -261,7 +261,7 @@ public class VideoService {
                     dto.setVideoName(video.getName());
                     dto.setChannelName(channel.getName());
 
-                    kafkaTemplate.send(topicConfig.getEmailRequest(), dto);
+                    kafkaTemplate.send(topicConfig.getEmailNotification(), dto);
                 }
         ));
     }

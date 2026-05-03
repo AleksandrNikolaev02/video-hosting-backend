@@ -40,6 +40,7 @@ app:
 
 topics:
   email-request: email-request
+  email-notification: email-notification
 
 logging:
   level:

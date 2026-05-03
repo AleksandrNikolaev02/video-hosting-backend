@@ -26,4 +26,7 @@ public interface ChannelRepository extends JpaRepository<Channel, Long> {
             AND channel.playlists IS EMPTY AND channel.videos IS EMPTY
     """)
     void deleteChannel(@Param("channel_id") Long channelId);
+
+    @Modifying
+    void deleteByAuthor(User user);
 }

@@ -51,8 +51,8 @@ eureka:
 
 jwt:
   secret_key: 53A73E5F1C4E0A2D3B5F2D784E6A1B423D6F247D1F6E5C3A596D635A75327855
-  time-to-live-access-token: 600
-  time-to-live-refresh-token: 3600
+  time-to-live-access-token: 3600
+  time-to-live-refresh-token: 86400
   issuer: Project
 
 logging:

@@ -12,6 +12,7 @@ public class VideoFactory {
                 .name(dto.title())
                 .creator(creator)
                 .videoStatus(VideoStatus.DRAFT)
+                .channel(creator.getChannel())
                 .build();
     }
 }

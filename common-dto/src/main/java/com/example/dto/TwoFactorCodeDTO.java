@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class TwoFactorCodeDTO {
+    private VerificationType kind;
     private Integer code;
     private String login;
 }

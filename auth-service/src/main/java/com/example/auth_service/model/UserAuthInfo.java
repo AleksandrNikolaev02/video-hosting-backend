@@ -31,11 +31,13 @@ import java.util.List;
 public class UserAuthInfo implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
     @Column(name = "email")
     private String email;
     @Column(name = "password")
     private String password;
+    @Column(name = "enabled")
+    private boolean enabled;
     @ManyToOne
     @JoinColumn(name = "role_id", referencedColumnName = "id")
     private RoleUser role;
@@ -75,6 +77,6 @@ public class UserAuthInfo implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

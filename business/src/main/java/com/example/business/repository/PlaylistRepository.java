@@ -1,6 +1,7 @@
 package com.example.business.repository;
 
 import com.example.business.model.Playlist;
+import com.example.business.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,4 +27,7 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
         DELETE FROM Playlist p WHERE p.channel.id = :channelId AND p.videos IS EMPTY
     """)
     void deleteEmptyPlaylistsByChannelId(@Param("channelId") Long channelId);
+
+    @Modifying
+    void deleteByOwner(User owner);
 }

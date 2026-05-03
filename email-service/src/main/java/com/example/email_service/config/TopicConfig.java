@@ -11,4 +11,5 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "topics")
 public class TopicConfig {
     private String emailRequest;
+    private String emailNotification;
 }

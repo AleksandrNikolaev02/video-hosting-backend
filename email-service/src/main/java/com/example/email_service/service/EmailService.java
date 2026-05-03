@@ -23,11 +23,10 @@ public class EmailService {
     private final TwoFactorCodeRepository factorCodeRepository;
     private final Random random = new Random();
 
-    // Нужно для оповещений.
-    // Сделать как-нибудь потом
-//    @KafkaListener(groupId = "${kafka.group-id}",
-//                   topics = "${topics.email-request}",
-//                   containerFactory = "containerFactoryEmailRequestDTO")
+   @KafkaListener(groupId = "${kafka.group-id}",
+                  topics = "${topics.email-notification}",
+                  containerFactory = "kafkaListenerContainerFactory",
+                  errorHandler = "sendRequestEmailErrorHandler")
     public void handleRequest(EmailRequestDTO dto) {
         log.info("Получен запрос на отправку письма!");
 

@@ -16,5 +16,5 @@ public class UserDTO {
     private String sname;
     private String email;
     private String password;
-    private Integer id;
+    private Long id;
 }

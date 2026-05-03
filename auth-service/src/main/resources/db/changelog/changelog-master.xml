@@ -10,4 +10,5 @@
     <include file="db/changelog/changes/create-user-auth-info-2025-08-01.xml"/>
     <include file="db/changelog/changes/create-settings-table-2025-08-01.xml"/>
     <include file="db/changelog/changes/insert-roles-in-table-202412111739.xml"/>
+    <include file="db/changelog/changes/add-enable-column-to-user-auth-info.xml"/>
 </databaseChangeLog>
